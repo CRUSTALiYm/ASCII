@@ -37,10 +37,6 @@
     "shortDescription": "Программа для удобной загрузки и обновления корпоративных программ",
     "longDescription": "Корпоративный клиент T-Steam, предназначенный для централизованной дистрибуции, установки и автоматического обновления рабочих приложений внутри компании.",
     "windows": {
-      "signCommand": {
-        "cmd": "node",
-        "args": ["sign.js", "%1"]
-      },
       "wix": {
         "language": "ru-RU",
         "upgradeCode": "07961c5b-e384-5196-8406-33096625b95b"
@@ -56,7 +52,11 @@
   "plugins": {
     "updater": {
       "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDQyODZCOTNERjdFOENEOTIKUldTU3plajNQYm1HUWc0REJqS2lkZ1pVSVRrOEY0OUlvb1BrSHJ6cWthMzZobUwvTFB3d3g3NWYK",
-      "endpoints": ["localhost:5665"]
+      "endpoints": ["localhost:5665"],
+      "dangerousInsecureTransportProtocol": true,
+      "windows": {
+        "installMode": "passive"
+      }
     }
   }
 }
