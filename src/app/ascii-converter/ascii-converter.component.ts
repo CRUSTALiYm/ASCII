@@ -68,7 +68,6 @@ interface ConversionProgress {
   total: number;
 }
 
-
 interface CharacterPreset {
   label: string;
   value: string;
@@ -99,9 +98,11 @@ export class AsciiConverterComponent
 {
   @ViewChild("resultCanvas") resultCanvas?: ElementRef<HTMLCanvasElement>;
   @ViewChild("compareStage") compareStage?: ElementRef<HTMLElement>;
-  @ViewChild("customPreviewCanvas") customPreviewCanvas?: ElementRef<HTMLCanvasElement>;
+  @ViewChild("customPreviewCanvas")
+  customPreviewCanvas?: ElementRef<HTMLCanvasElement>;
   @ViewChild("fileInput") fileInput?: ElementRef<HTMLInputElement>;
-  @ViewChild("replaceFileInput") replaceFileInput?: ElementRef<HTMLInputElement>;
+  @ViewChild("replaceFileInput")
+  replaceFileInput?: ElementRef<HTMLInputElement>;
 
   readonly viewModes = [
     { label: "Результат", value: "result", icon: "pi pi-sparkles" },
@@ -116,11 +117,37 @@ export class AsciiConverterComponent
     { label: "Лазурь", value: "cyan" },
   ];
   readonly presetOptions: CharacterPreset[] = [
-    { label: "Classic", value: " .:-=+*#%@", description: "Мягкий контраст" },
-    { label: "Editorial", value: " `.,-':<>;+!*/?%&98#@", description: "Точный газетный растр" },
-    { label: "Blocks", value: " ░▒▓█", description: "Плотные блоки" },
-    { label: "Matrix", value: " 01", description: "Цифровой ритм" },
-    { label: "Minimal", value: " .#", description: "Минимум символов" },
+    {
+      label: "Classic",
+      value: " .:-=+*#%@",
+      description: "Мягкие переходы",
+    },
+    {
+      label: "Editorial",
+      value:
+        " .'`^ \",:;Il!i><~+_-?][}{1)(|\\/tfjrxnuvczXYUJCLQ0OZmwqpdbkhao*#MW&8%B@$",
+      description: "Фотографическая четкость",
+    },
+    {
+      label: "Raster",
+      value: " `.,-':<>;+!*/?%&98#@",
+      description: "Газетная текстура",
+    },
+    {
+      label: "Blocks",
+      value: " ░▒▓█",
+      description: "Объемные фигуры",
+    },
+    {
+      label: "Matrix",
+      value: " 01",
+      description: "Цифровой шифр",
+    },
+    {
+      label: "Minimal",
+      value: " .:-#",
+      description: "Грубый силуэт",
+    },
   ];
 
   viewMode: ViewMode = "result";
@@ -175,12 +202,23 @@ export class AsciiConverterComponent
   constructor() {}
 
   async ngOnInit(): Promise<void> {
-    this.progressUnlisten = await listen<ConversionProgress>("conversion-progress", (event) => {
-      if (event.payload.jobId === this.nativeJobId && event.payload.total > 0) {
-        const pixelProgress = Math.round((event.payload.processed / event.payload.total) * 45);
-        this.conversionProgress = Math.max(this.conversionProgress, pixelProgress);
-      }
-    });
+    this.progressUnlisten = await listen<ConversionProgress>(
+      "conversion-progress",
+      (event) => {
+        if (
+          event.payload.jobId === this.nativeJobId &&
+          event.payload.total > 0
+        ) {
+          const pixelProgress = Math.round(
+            (event.payload.processed / event.payload.total) * 45,
+          );
+          this.conversionProgress = Math.max(
+            this.conversionProgress,
+            pixelProgress,
+          );
+        }
+      },
+    );
     try {
       const state = await invoke<PersistedState>("load_app_state");
       this.history = state.history ?? [];
@@ -233,8 +271,9 @@ export class AsciiConverterComponent
 
   get selectedPresetOption(): CharacterPreset {
     return (
-      this.presetOptions.find((preset) => preset.value === this.selectedPreset) ??
-      this.presetOptions[0]
+      this.presetOptions.find(
+        (preset) => preset.value === this.selectedPreset,
+      ) ?? this.presetOptions[0]
     );
   }
 
@@ -257,7 +296,20 @@ export class AsciiConverterComponent
   }
 
   get hasChanges(): boolean {
-    return this.selectedTone !== "mono" || this.selectedPreset !== this.presetOptions[0].value || this.resolution !== 100 || this.brightness !== 0 || this.contrast !== 0 || this.compression !== 90 || this.invert || !this.sourceBlackWhite || this.sourceInvert || this.sourceBrightness !== 0 || this.sourceContrast !== 0 || this.sourceThreshold !== 50;
+    return (
+      this.selectedTone !== "mono" ||
+      this.selectedPreset !== this.presetOptions[0].value ||
+      this.resolution !== 100 ||
+      this.brightness !== 0 ||
+      this.contrast !== 0 ||
+      this.compression !== 90 ||
+      this.invert ||
+      !this.sourceBlackWhite ||
+      this.sourceInvert ||
+      this.sourceBrightness !== 0 ||
+      this.sourceContrast !== 0 ||
+      this.sourceThreshold !== 50
+    );
   }
 
   resetSettings(): void {
@@ -309,10 +361,18 @@ export class AsciiConverterComponent
       const selected = await open({
         multiple: false,
         directory: false,
-        filters: [{ name: "Изображения", extensions: ["png", "jpg", "jpeg", "webp", "gif", "bmp"] }],
+        filters: [
+          {
+            name: "Изображения",
+            extensions: ["png", "jpg", "jpeg", "webp", "gif", "bmp"],
+          },
+        ],
       });
       if (typeof selected === "string") {
-        await this.loadImagePath(selected, selected.split(/[\\/]/).pop() || "Изображение");
+        await this.loadImagePath(
+          selected,
+          selected.split(/[\\/]/).pop() || "Изображение",
+        );
       }
     } catch {
       // Keep the browser/file-input path available when the Tauri dialog is unavailable.
@@ -328,13 +388,22 @@ export class AsciiConverterComponent
     this.objectUrl = undefined;
     this.imagePath = path;
     this.imageName = name;
-    this.imageUrl = convertFileSrc(path);
     this.imageLoaded = false;
     this.sourceImage = undefined;
     this.rustResult = undefined;
     this.asciiText = "";
     this.canvasDisplayWidth = 0;
     this.canvasDisplayHeight = 0;
+    // Read the image as base64 and create a blob URL — avoids the Tauri asset server
+    // which can return 502 for paths with Cyrillic characters, spaces, or backslashes.
+    try {
+      const base64 = await invoke<string>("read_image_as_base64", { path });
+      this.objectUrl = `data:image/jpeg;base64,${base64}`;
+      this.imageUrl = this.objectUrl;
+    } catch {
+      // Fallback to convertFileSrc if the Rust command is unavailable (e.g. browser preview).
+      this.imageUrl = convertFileSrc(path.replace(/\\/g, "/"));
+    }
     const image = new Image();
     image.onload = () => {
       this.sourceImage = image;
@@ -344,7 +413,7 @@ export class AsciiConverterComponent
       if (this.imagePath) void this.findBestInitialSettings();
     };
     image.onerror = () => {
-      this.imageLoaded = false;
+      this.imageLoaded = true;
       this.conversionMessage = "Не удалось открыть изображение.";
     };
     image.src = this.imageUrl;
@@ -397,6 +466,10 @@ export class AsciiConverterComponent
       this.imageHeight = image.naturalHeight;
       if (this.imagePath) void this.findBestInitialSettings();
     };
+    image.onerror = () => {
+      this.imageLoaded = true;
+      this.conversionMessage = "Не удалось открыть изображение.";
+    };
     image.src = this.imageUrl;
   }
 
@@ -416,7 +489,10 @@ export class AsciiConverterComponent
         jobId,
       });
     } catch (error) {
-      if (version === this.settingsSearchVersion && !String(error).includes("settings_search_cancelled")) {
+      if (
+        version === this.settingsSearchVersion &&
+        !String(error).includes("settings_search_cancelled")
+      ) {
         this.conversionMessage = "Не удалось подобрать параметры.";
       }
       return;
@@ -443,7 +519,10 @@ export class AsciiConverterComponent
 
   resolutionChanged(value?: number | null): void {
     if (value !== undefined) {
-      this.resolution = Math.max(24, Math.min(300, Math.round(Number(value) || 24)));
+      this.resolution = Math.max(
+        24,
+        Math.min(300, Math.round(Number(value) || 24)),
+      );
     }
     this.cancelSettingsSearch();
     this.updatePreview();
@@ -474,7 +553,10 @@ export class AsciiConverterComponent
       createdAt: new Date().toISOString(),
       settings: this.currentSettings(),
     };
-    this.history = [item, ...this.history.filter((entry) => entry.path !== item.path)].slice(0, 20);
+    this.history = [
+      item,
+      ...this.history.filter((entry) => entry.path !== item.path),
+    ].slice(0, 20);
     await this.persistState();
   }
 
@@ -522,18 +604,29 @@ export class AsciiConverterComponent
       const name = this.newCharacterName.trim();
       if (name) this.customCharacterNames[value] = name;
       delete this.customCharacterNames[this.editingCharacterValue];
-      const option = this.presetOptions.find((item) => item.value === this.editingCharacterValue);
+      const option = this.presetOptions.find(
+        (item) => item.value === this.editingCharacterValue,
+      );
       if (option) {
         option.value = value;
         option.label = name || `Мой набор ${index + 1}`;
         option.description = `${value.length} символов`;
       }
-      if (this.selectedPreset === this.editingCharacterValue) this.selectedPreset = value;
+      if (this.selectedPreset === this.editingCharacterValue)
+        this.selectedPreset = value;
     } else {
       if (this.customCharacters.includes(value)) return;
       this.customCharacters = [...this.customCharacters, value];
-      if (this.newCharacterName.trim()) this.customCharacterNames[value] = this.newCharacterName.trim();
-      this.presetOptions.push({ label: this.customCharacterNames[value] || `Мой набор ${this.customCharacters.length}`, value, description: `${value.length} символов`, custom: true });
+      if (this.newCharacterName.trim())
+        this.customCharacterNames[value] = this.newCharacterName.trim();
+      this.presetOptions.push({
+        label:
+          this.customCharacterNames[value] ||
+          `Мой набор ${this.customCharacters.length}`,
+        value,
+        description: `${value.length} символов`,
+        custom: true,
+      });
       this.selectedPreset = value;
     }
     this.newCharacterSet = "";
@@ -546,11 +639,14 @@ export class AsciiConverterComponent
 
   async deleteCharacterSet(preset: CharacterPreset): Promise<void> {
     if (!preset.custom) return;
-    this.customCharacters = this.customCharacters.filter((value) => value !== preset.value);
+    this.customCharacters = this.customCharacters.filter(
+      (value) => value !== preset.value,
+    );
     delete this.customCharacterNames[preset.value];
     const index = this.presetOptions.indexOf(preset);
     if (index >= 0) this.presetOptions.splice(index, 1);
-    if (this.selectedPreset === preset.value) this.selectedPreset = this.presetOptions[0].value;
+    if (this.selectedPreset === preset.value)
+      this.selectedPreset = this.presetOptions[0].value;
     await this.persistState();
     this.renderResult();
   }
@@ -561,7 +657,8 @@ export class AsciiConverterComponent
   }
 
   openExportDialog(): void {
-    this.exportBaseName = this.imageName.replace(/\.[^.]+$/, "") || "ascii-result";
+    this.exportBaseName =
+      this.imageName.replace(/\.[^.]+$/, "") || "ascii-result";
     this.showExportDialog = true;
   }
 
@@ -571,15 +668,28 @@ export class AsciiConverterComponent
     const extension = this.exportFormat === "txt" ? "txt" : "png";
     const selectedPath = await save({
       defaultPath: `${this.exportBaseName}.${extension}`,
-      filters: [{ name: this.exportFormat === "txt" ? "ASCII text" : "PNG image", extensions: [extension] }],
+      filters: [
+        {
+          name: this.exportFormat === "txt" ? "ASCII text" : "PNG image",
+          extensions: [extension],
+        },
+      ],
     });
     if (!selectedPath) return;
     const text = this.rustResult?.text ?? this.asciiText;
     const png = canvas.toDataURL("image/png", 1);
     if (this.exportFormat === "all") {
       const basePath = selectedPath.replace(/\.[^.\\/]+$/, "");
-      await invoke("save_export", { path: `${basePath}.png`, content: png, binary: true });
-      await invoke("save_export", { path: `${basePath}.txt`, content: text, binary: false });
+      await invoke("save_export", {
+        path: `${basePath}.png`,
+        content: png,
+        binary: true,
+      });
+      await invoke("save_export", {
+        path: `${basePath}.txt`,
+        content: text,
+        binary: false,
+      });
     } else {
       await invoke("save_export", {
         path: selectedPath,
@@ -600,7 +710,11 @@ export class AsciiConverterComponent
       setTimeout(() => this.sourceImage && this.renderResult());
       return;
     }
-    if (!this.imagePath || this.imagePath.startsWith("blob:") || this.imagePath === this.imageName) {
+    if (
+      !this.imagePath ||
+      this.imagePath.startsWith("blob:") ||
+      this.imagePath === this.imageName
+    ) {
       this.isConverting = false;
       this.conversionMessage = "Не удалось получить путь к файлу.";
       return;
@@ -620,22 +734,25 @@ export class AsciiConverterComponent
       }
       this.nativeJobId = jobId;
       activeJobId = jobId;
-      this.rustResult = await invoke<RustAsciiResult>("convert_image_to_ascii", {
-        request: {
-          jobId,
-          path: this.imagePath,
-          columns: this.resolution,
-          characters: this.selectedPreset,
-          brightness: this.brightness,
-          contrast: this.contrast,
-          invert: this.invert,
-          sourceBrightness: this.sourceBrightness,
-          sourceContrast: this.sourceContrast,
-          sourceInvert: this.sourceInvert,
-          sourceBlackWhite: this.sourceBlackWhite,
-          sourceThreshold: this.sourceThreshold,
+      this.rustResult = await invoke<RustAsciiResult>(
+        "convert_image_to_ascii",
+        {
+          request: {
+            jobId,
+            path: this.imagePath,
+            columns: this.resolution,
+            characters: this.selectedPreset,
+            brightness: this.brightness,
+            contrast: this.contrast,
+            invert: this.invert,
+            sourceBrightness: this.sourceBrightness,
+            sourceContrast: this.sourceContrast,
+            sourceInvert: this.sourceInvert,
+            sourceBlackWhite: this.sourceBlackWhite,
+            sourceThreshold: this.sourceThreshold,
+          },
         },
-      });
+      );
       this.conversionProgress = Math.max(this.conversionProgress, 50);
       if (version !== this.renderVersion) return;
       const metrics = this.measureCharacter();
@@ -655,7 +772,9 @@ export class AsciiConverterComponent
       for (let y = 0; y < resultRows; y += 1) {
         if (version !== this.renderVersion) return;
         const start = y * resultColumns;
-        const line = this.rustResult.values.slice(start, start + resultColumns).join("");
+        const line = this.rustResult.values
+          .slice(start, start + resultColumns)
+          .join("");
         context.fillText(line, 0, y * metrics.height);
         if (y % 4 === 0 || y === resultRows - 1) {
           this.conversionProgress = Math.max(
@@ -670,7 +789,10 @@ export class AsciiConverterComponent
       this.conversionProgress = 100;
     } catch (error) {
       const reason = String(error);
-      if (version === this.renderVersion && !reason.includes("conversion_cancelled")) {
+      if (
+        version === this.renderVersion &&
+        !reason.includes("conversion_cancelled")
+      ) {
         this.conversionMessage = "Не удалось обработать изображение в Rust.";
       }
     } finally {
@@ -679,7 +801,11 @@ export class AsciiConverterComponent
     }
   }
 
-  private measureCharacter(): { width: number; height: number; fontSize: number } {
+  private measureCharacter(): {
+    width: number;
+    height: number;
+    fontSize: number;
+  } {
     const probe = document.createElement("canvas").getContext("2d");
     if (!probe) return { width: 9, height: 16, fontSize: 14 };
     const fontSize = 14;
@@ -687,22 +813,31 @@ export class AsciiConverterComponent
     const metrics = probe.measureText("M");
     return {
       width: Math.ceil(metrics.width),
-      height: Math.ceil((metrics.actualBoundingBoxAscent || 11) + (metrics.actualBoundingBoxDescent || 3) + 2),
+      height: Math.ceil(
+        (metrics.actualBoundingBoxAscent || 11) +
+          (metrics.actualBoundingBoxDescent || 3) +
+          2,
+      ),
       fontSize,
     };
   }
 
   private fitCanvasToPreview(): void {
-    requestAnimationFrame(() => requestAnimationFrame(() => {
-      const canvas = this.resultCanvas?.nativeElement;
-      const stage = this.compareStage?.nativeElement;
-      if (!canvas || !stage || !canvas.width || !canvas.height) return;
-      const availableWidth = Math.max(1, stage.clientWidth - 20);
-      const availableHeight = Math.max(1, stage.clientHeight - 20);
-      const fit = Math.min(availableWidth / canvas.width, availableHeight / canvas.height);
-      this.canvasDisplayWidth = Math.max(1, Math.round(canvas.width * fit));
-      this.canvasDisplayHeight = Math.max(1, Math.round(canvas.height * fit));
-    }));
+    requestAnimationFrame(() =>
+      requestAnimationFrame(() => {
+        const canvas = this.resultCanvas?.nativeElement;
+        const stage = this.compareStage?.nativeElement;
+        if (!canvas || !stage || !canvas.width || !canvas.height) return;
+        const availableWidth = Math.max(1, stage.clientWidth - 20);
+        const availableHeight = Math.max(1, stage.clientHeight - 20);
+        const fit = Math.min(
+          availableWidth / canvas.width,
+          availableHeight / canvas.height,
+        );
+        this.canvasDisplayWidth = Math.max(1, Math.round(canvas.width * fit));
+        this.canvasDisplayHeight = Math.max(1, Math.round(canvas.height * fit));
+      }),
+    );
   }
 
   private renderCustomPreview(): void {
@@ -723,12 +858,14 @@ export class AsciiConverterComponent
   }
 
   private toneColor(): string {
-    return {
-      mono: "#e6e8ee",
-      lime: "#b7f36b",
-      amber: "#ffc857",
-      cyan: "#6de4ff",
-    }[this.selectedTone] ?? "#e6e8ee";
+    return (
+      {
+        mono: "#e6e8ee",
+        lime: "#b7f36b",
+        amber: "#ffc857",
+        cyan: "#6de4ff",
+      }[this.selectedTone] ?? "#e6e8ee"
+    );
   }
 
   private async persistState(): Promise<void> {

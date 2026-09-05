@@ -268,10 +268,17 @@ pub fn run() {
             cancel_conversion,
             begin_settings_search,
             cancel_settings_search,
-            save_export
+            save_export,
+            read_image_as_base64
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
+}
+
+#[tauri::command]
+fn read_image_as_base64(path: String) -> Result<String, String> {
+    let bytes = std::fs::read(&path).map_err(|error| error.to_string())?;
+    Ok(base64::engine::general_purpose::STANDARD.encode(&bytes))
 }
 
 #[cfg(test)]
