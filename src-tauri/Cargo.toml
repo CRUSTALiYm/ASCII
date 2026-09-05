@@ -1,5 +1,5 @@
 [package]
-name = "t-steam"
+name = "t-ascii"
 version = "0.1.0"
 description = "Программа для удобной загрузки и обновления корпоративных программ"
 authors = ["CRUSTALiYm"]

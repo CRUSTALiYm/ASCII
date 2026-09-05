@@ -1,18 +1,18 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "t-steam",
+  "productName": "t-ascii",
   "version": "0.1.0",
-  "identifier": "com.t-steam.desktop",
+  "identifier": "com.t-ascii.desktop",
   "build": {
     "beforeDevCommand": "npm run start",
     "devUrl": "http://localhost:1420",
     "beforeBuildCommand": "npm run build",
-    "frontendDist": "../dist/t-steam/browser"
+    "frontendDist": "../dist/t-ascii/browser"
   },
   "app": {
     "windows": [
       {
-        "title": "t-steam",
+        "title": "t-ascii",
         "width": 800,
         "height": 600
       }
@@ -35,7 +35,7 @@
     "publisher": "ТМ-ТЕХНОЛОГИИ",
     "copyright": "Copyright © 2026 CRUSTALiYm.",
     "shortDescription": "Программа для удобной загрузки и обновления корпоративных программ",
-    "longDescription": "Корпоративный клиент T-Steam, предназначенный для централизованной дистрибуции, установки и автоматического обновления рабочих приложений внутри компании.",
+    "longDescription": "Корпоративный клиент t-ascii, предназначенный для централизованной дистрибуции, установки и автоматического обновления рабочих приложений внутри компании.",
     "windows": {
       "wix": {
         "language": "ru-RU",
