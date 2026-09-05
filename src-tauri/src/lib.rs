@@ -44,6 +44,10 @@ struct BestSettings {
     resolution: u32,
 }
 
+/// Pick a stable preview width from image metadata only.
+///
+/// This intentionally does not decode the image: loading a large photo just to
+/// determine its dimensions made automatic settings appear to hang.
 fn best_resolution(width: u32) -> u32 {
     (width / 8).clamp(64, 180)
 }
@@ -61,15 +65,18 @@ fn find_best_settings(path: String, job_id: u64) -> Result<BestSettings, String>
     if SETTINGS_JOB.load(Ordering::Relaxed) != job_id {
         return Err("settings_search_cancelled".into());
     }
-    let image = ImageReader::open(path)
+    let reader = ImageReader::open(path)
         .map_err(|error| error.to_string())?
-        .decode()
+        .with_guessed_format()
+        .map_err(|error| error.to_string())?;
+    let (width, _height) = reader
+        .into_dimensions()
         .map_err(|error| error.to_string())?;
     if SETTINGS_JOB.load(Ordering::Relaxed) != job_id {
         return Err("settings_search_cancelled".into());
     }
     Ok(BestSettings {
-        resolution: best_resolution(image.width()),
+        resolution: best_resolution(width),
     })
 }
 

@@ -11,7 +11,7 @@ import { DatePipe } from "@angular/common";
 import { FormsModule } from "@angular/forms";
 import { convertFileSrc, invoke } from "@tauri-apps/api/core";
 import { listen, UnlistenFn } from "@tauri-apps/api/event";
-import { save } from "@tauri-apps/plugin-dialog";
+import { open, save } from "@tauri-apps/plugin-dialog";
 import { ButtonModule } from "primeng/button";
 import { DialogModule } from "primeng/dialog";
 import { InputNumberModule } from "primeng/inputnumber";
@@ -305,8 +305,20 @@ export class AsciiConverterComponent
   }
 
   async openImageFile(): Promise<void> {
-    const input = this.hasImage ? this.replaceFileInput : this.fileInput;
-    input?.nativeElement.click();
+    try {
+      const selected = await open({
+        multiple: false,
+        directory: false,
+        filters: [{ name: "Изображения", extensions: ["png", "jpg", "jpeg", "webp", "gif", "bmp"] }],
+      });
+      if (typeof selected === "string") {
+        await this.loadImagePath(selected, selected.split(/[\\/]/).pop() || "Изображение");
+      }
+    } catch {
+      // Keep the browser/file-input path available when the Tauri dialog is unavailable.
+      const input = this.hasImage ? this.replaceFileInput : this.fileInput;
+      input?.nativeElement.click();
+    }
   }
 
   private async loadImagePath(path: string, name: string): Promise<void> {
@@ -318,6 +330,11 @@ export class AsciiConverterComponent
     this.imageName = name;
     this.imageUrl = convertFileSrc(path);
     this.imageLoaded = false;
+    this.sourceImage = undefined;
+    this.rustResult = undefined;
+    this.asciiText = "";
+    this.canvasDisplayWidth = 0;
+    this.canvasDisplayHeight = 0;
     const image = new Image();
     image.onload = () => {
       this.sourceImage = image;
@@ -327,6 +344,7 @@ export class AsciiConverterComponent
       if (this.imagePath) void this.findBestInitialSettings();
     };
     image.onerror = () => {
+      this.imageLoaded = false;
       this.conversionMessage = "Не удалось открыть изображение.";
     };
     image.src = this.imageUrl;
@@ -365,6 +383,11 @@ export class AsciiConverterComponent
     this.imageName = file.name;
     this.imagePath = "";
     this.imageLoaded = false;
+    this.sourceImage = undefined;
+    this.rustResult = undefined;
+    this.asciiText = "";
+    this.canvasDisplayWidth = 0;
+    this.canvasDisplayHeight = 0;
 
     const image = new Image();
     image.onload = () => {
@@ -588,6 +611,7 @@ export class AsciiConverterComponent
   private async renderRustResult(version: number): Promise<void> {
     if (!this.imagePath || !this.resultCanvas) return;
     this.isConverting = true;
+    let activeJobId = 0;
     try {
       const jobId = await invoke<number>("begin_conversion");
       if (version !== this.renderVersion) {
@@ -595,6 +619,7 @@ export class AsciiConverterComponent
         return;
       }
       this.nativeJobId = jobId;
+      activeJobId = jobId;
       this.rustResult = await invoke<RustAsciiResult>("convert_image_to_ascii", {
         request: {
           jobId,
@@ -649,7 +674,7 @@ export class AsciiConverterComponent
         this.conversionMessage = "Не удалось обработать изображение в Rust.";
       }
     } finally {
-      this.nativeJobId = 0;
+      if (this.nativeJobId === activeJobId) this.nativeJobId = 0;
       if (version === this.renderVersion) this.isConverting = false;
     }
   }

@@ -94,7 +94,7 @@
               @if (viewMode !== 'result') {
                 <img class="source-image" [src]="imageUrl" [style.filter]="originalFilter" alt="Исходное изображение" />
               }
-              <canvas #resultCanvas class="ascii-canvas" [class.ascii-canvas--hidden]="viewMode === 'original'" [style.width.px]="canvasDisplayWidth" [style.height.px]="canvasDisplayHeight" [style.clip-path]="viewMode === 'split' ? 'inset(0 0 0 ' + splitPosition + '%)' : null"></canvas>
+              <canvas #resultCanvas class="ascii-canvas" [class.ascii-canvas--hidden]="viewMode === 'original'" [style.width.px]="canvasDisplayWidth || null" [style.height.px]="canvasDisplayHeight || null" [style.clip-path]="viewMode === 'split' ? 'inset(0 0 0 ' + splitPosition + '%)' : null"></canvas>
               @if (viewMode === 'overlay') {
                 <img class="overlay-image" [src]="imageUrl" [style.filter]="originalFilter" alt="Наложение оригинала" />
               }

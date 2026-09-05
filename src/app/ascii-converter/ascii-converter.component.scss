@@ -205,6 +205,8 @@
 .image-dimensions { margin-left: 6px; color: #626b78; font-size: 0.55rem; }
 .preview-size { color: #636b78; }
 .conversion-progress { display: block; height: 3px; }
+::ng-deep .conversion-progress .p-progressbar { height: 3px; background: #292f38; border-radius: 3px; }
+::ng-deep .conversion-progress .p-progressbar-value { background: #c8ff3d; transition: width 120ms ease; }
 .compare-stage { position: relative; display: grid; place-items: center; height: calc(100% - 31px); min-height: 0; overflow: hidden; border-radius: 7px; background: #0d0f13; }
 .conversion-status { position: absolute; z-index: 5; top: 10px; left: 50%; display: flex; align-items: center; gap: 6px; padding: 5px 8px; color: #dfffa0; background: rgba(20, 27, 16, 0.9); border: 1px solid #536b2a; border-radius: 5px; transform: translateX(-50%); font-size: 0.58rem; white-space: nowrap; }
 .source-image, .ascii-canvas, .overlay-image { max-width: 100%; max-height: 100%; object-fit: contain; }
