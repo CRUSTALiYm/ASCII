@@ -6,7 +6,24 @@ const projectRoot = path.resolve(
   path.dirname(fileURLToPath(import.meta.url)),
   "..",
 );
-const outputDirectory = path.join(projectRoot, "dist", "installers");
+
+async function getTauriVersion() {
+  try {
+    const configPath = path.join(projectRoot, "src-tauri", "tauri.conf.json");
+    const configRaw = await readFile(configPath, "utf-8");
+    const config = JSON.parse(configRaw);
+    return config.version || "1.0.0";
+  } catch (e) {
+    console.log(
+      "[Предупреждение] Не удалось прочитать версию из tauri.conf.json, используется 1.0.0",
+    );
+    return "1.0.0";
+  }
+}
+
+const version = await getTauriVersion();
+
+const outputDirectory = path.join(projectRoot, "dist", "installers", version);
 
 const targets = [
   ["x64", "x86_64-pc-windows-msvc"],
@@ -44,27 +61,10 @@ async function collectFiles(directory) {
   }
 }
 
-async function getTauriVersion() {
-  try {
-    const configPath = path.join(projectRoot, "src-tauri", "tauri.conf.json");
-    const configRaw = await readFile(configPath, "utf-8");
-    const config = JSON.parse(configRaw);
-    return config.version || "1.0.0";
-  } catch (e) {
-    console.log(
-      "[Предупреждение] Не удалось прочитать версию из tauri.conf.json, используется 1.0.0",
-    );
-    return "1.0.0";
-  }
-}
-
 await rm(outputDirectory, { recursive: true, force: true });
 await mkdir(outputDirectory, { recursive: true });
 
-const version = await getTauriVersion();
-
-const DEPLOY_BASE_URL =
-  `https://github.com/CRUSTALiYm/ASCII/releases/download/v${version}`;
+const DEPLOY_BASE_URL = `https://github.com/CRUSTALiYm/ASCII/releases/download/v${version}`;
 
 const latestJson = {
   version: version,
@@ -75,6 +75,8 @@ const latestJson = {
 
 const signatures = {};
 const updateArtifacts = [];
+
+const versionFolderPattern = `_${version}_`;
 
 for (const [architecture, target] of targets) {
   const bundleDirectory = path.join(
@@ -89,6 +91,11 @@ for (const [architecture, target] of targets) {
 
   for (const sourcePath of files) {
     const baseName = path.basename(sourcePath);
+
+    if (!baseName.includes(versionFolderPattern)) {
+      continue;
+    }
+
     const destinationName = `${architecture}-${baseName}`;
     await cp(sourcePath, path.join(outputDirectory, destinationName));
 
@@ -124,7 +131,7 @@ if (Object.keys(latestJson.platforms).length > 0) {
   );
 } else {
   console.log(
-    "[Предупреждение] Не найдено подходящих .sig или .exe файлов. Убедитесь, что настроена подпись билдов.",
+    "[Предупреждение] Не найдено подходящих .sig или .exe файлов текущей версии. Убедитесь, что настроена подпись билдов.",
   );
 }
 
