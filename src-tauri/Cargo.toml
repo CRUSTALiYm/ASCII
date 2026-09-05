@@ -1,6 +1,6 @@
 [package]
 name = "t-ascii"
-version = "0.1.1"
+version = "0.1.2"
 description = "Простой и удобный Десктопный конвертер изображений в ASCII"
 authors = ["CRUSTALiYm"]
 edition = "2021"
