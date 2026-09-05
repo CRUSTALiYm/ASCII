@@ -18,25 +18,28 @@
   },
   "private": true,
   "dependencies": {
-    "@angular/common": "^20.1.4",
-    "@angular/compiler": "^20.1.4",
-    "@angular/core": "^20.1.4",
-    "@angular/forms": "^20.1.4",
-    "@angular/platform-browser": "^20.1.4",
-    "@angular/router": "^20.1.4",
+    "@angular/common": "^21.2.22",
+    "@angular/compiler": "^21.2.22",
+    "@angular/core": "^21.2.22",
+    "@angular/forms": "^21.2.22",
+    "@angular/platform-browser": "^21.2.22",
+    "@angular/router": "^21.2.22",
+    "@primeng/themes": "^21.0.4",
     "@tauri-apps/api": "^2",
     "@tauri-apps/plugin-opener": "^2",
     "@tauri-apps/plugin-updater": "^2.11.0",
+    "primeicons": "^8.0.0",
+    "primeng": "^21.1.9",
     "rxjs": "~7.8.2",
     "tslib": "^2.8.1",
     "zone.js": "~0.15.1"
   },
   "devDependencies": {
-    "@angular/build": "^20.1.4",
-    "@angular/cli": "^20.1.4",
-    "@angular/compiler-cli": "^20.1.4",
+    "@angular/build": "^21.2.23",
+    "@angular/cli": "^21.2.23",
+    "@angular/compiler-cli": "^21.2.22",
     "@tauri-apps/cli": "^2",
     "dotenv-cli": "^11.0.0",
-    "typescript": "~5.8.3"
+    "typescript": "~5.9.3"
   }
 }
