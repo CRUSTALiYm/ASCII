@@ -1,0 +1,19 @@
+<header
+  class="titlebar"
+  (mousedown)="startDragging($event)"
+  (dblclick)="toggleMaximizeWindow($event)"
+>
+  <span class="titlebar__title">Конвертер ASCII</span>
+
+  <nav class="window-controls" aria-label="Управление окном" (mousedown)="$event.stopPropagation()">
+    <button class="window-control" type="button" aria-label="Свернуть" title="Свернуть" (click)="minimizeWindow()">
+      <i class="pi pi-minus" aria-hidden="true"></i>
+    </button>
+    <button class="window-control" type="button" aria-label="Развернуть" title="Развернуть" (click)="toggleMaximizeWindow()">
+      <i class="pi pi-stop" aria-hidden="true"></i>
+    </button>
+    <button class="window-control window-control--close" type="button" aria-label="Закрыть" title="Закрыть" (click)="closeWindow()">
+      <i class="pi pi-times" aria-hidden="true"></i>
+    </button>
+  </nav>
+</header>

@@ -1,0 +1,14 @@
+.window-shell {
+	width: 100%;
+	height: 100vh;
+	overflow: hidden;
+	box-sizing: border-box;
+	border: 1px solid #2d323d;
+	border-radius: 12px;
+	background: #17191f;
+	box-shadow: 0 18px 48px rgba(0, 0, 0, 0.3);
+}
+
+.window-content {
+	height: calc(100vh - 32px);
+}

@@ -12,9 +12,16 @@
   "app": {
     "windows": [
       {
-        "title": "t-ascii",
+        "title": "Конвертер ASCII",
         "width": 800,
-        "height": 600
+        "height": 600,
+        "minWidth": 240,
+        "minHeight": 120,
+        "maxWidth": 1920,
+        "maxHeight": 1200,
+        "decorations": false,
+        "transparent": true,
+        "shadow": false
       }
     ],
     "security": {
