@@ -1,36 +1,54 @@
-import { cp, mkdir, readdir, rm } from 'node:fs/promises';
-import path from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { cp, mkdir, readdir, rm } from "node:fs/promises";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 
-const projectRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-const outputDirectory = path.join(projectRoot, 'dist', 'installers');
+const projectRoot = path.resolve(
+  path.dirname(fileURLToPath(import.meta.url)),
+  "..",
+);
+const outputDirectory = path.join(projectRoot, "dist", "installers");
 const targets = [
-  ['x64', 'x86_64-pc-windows-msvc'],
-  ['x86', 'i686-pc-windows-msvc'],
-  ['arm64', 'aarch64-pc-windows-msvc'],
+  ["x64", "x86_64-pc-windows-msvc"],
+  ["x86", "i686-pc-windows-msvc"],
+  ["arm64", "aarch64-pc-windows-msvc"],
 ];
 
 async function collectFiles(directory) {
-  const entries = await readdir(directory, { withFileTypes: true });
-  const files = [];
+  try {
+    const entries = await readdir(directory, { withFileTypes: true });
+    const files = [];
 
-  for (const entry of entries) {
-    const entryPath = path.join(directory, entry.name);
-    if (entry.isDirectory()) {
-      files.push(...await collectFiles(entryPath));
-    } else {
-      files.push(entryPath);
+    for (const entry of entries) {
+      const entryPath = path.join(directory, entry.name);
+      if (entry.isDirectory()) {
+        files.push(...(await collectFiles(entryPath)));
+      } else {
+        files.push(entryPath);
+      }
     }
-  }
 
-  return files;
+    return files;
+  } catch (error) {
+    if (error.code === "ENOENT") {
+      console.log(`[Инфо] Путь не найден: ${directory}`);
+      return [];
+    }
+    throw error;
+  }
 }
 
 await rm(outputDirectory, { recursive: true, force: true });
 await mkdir(outputDirectory, { recursive: true });
 
 for (const [architecture, target] of targets) {
-  const bundleDirectory = path.join(projectRoot, 'src-tauri', 'target', target, 'release', 'bundle');
+  const bundleDirectory = path.join(
+    projectRoot,
+    "src-tauri",
+    "target",
+    target,
+    "release",
+    "bundle",
+  );
   const files = await collectFiles(bundleDirectory);
 
   for (const sourcePath of files) {
@@ -39,4 +57,6 @@ for (const [architecture, target] of targets) {
   }
 }
 
-console.log(`Артефакты собраны в ${path.relative(projectRoot, outputDirectory)}`);
+console.log(
+  `Артефакты собраны в ${path.relative(projectRoot, outputDirectory)}`,
+);

@@ -1,7 +1,7 @@
 {
   "name": "t-ascii",
   "description": "Программа для удобной загрузки и обновления корпоративных программ",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "productName": "Конвертер ASCII",
   "type": "module",
   "scripts": {

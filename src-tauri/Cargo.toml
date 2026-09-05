@@ -1,6 +1,6 @@
 [package]
 name = "t-ascii"
-version = "0.1.0"
+version = "0.1.1"
 description = "Программа для удобной загрузки и обновления корпоративных программ"
 authors = ["CRUSTALiYm"]
 edition = "2021"
