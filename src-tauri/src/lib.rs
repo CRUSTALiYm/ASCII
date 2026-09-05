@@ -8,6 +8,7 @@ use std::fs;
 use std::path::PathBuf;
 use std::sync::atomic::{AtomicU64, Ordering};
 use tauri::{AppHandle, Emitter, Manager};
+use tauri_plugin_updater::UpdaterExt;
 
 static CONVERSION_JOB: AtomicU64 = AtomicU64::new(0);
 static SETTINGS_JOB: AtomicU64 = AtomicU64::new(0);
@@ -255,6 +256,13 @@ fn save_export(path: String, content: String, binary: bool) -> Result<(), String
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
+        .setup(|app| {
+            let handle = app.handle().clone();
+            tauri::async_runtime::spawn(async move {
+                update(handle).await.unwrap();
+            });
+            Ok(())
+        })
         .plugin(tauri_plugin_updater::Builder::new().build())
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_dialog::init())
@@ -272,7 +280,7 @@ pub fn run() {
             read_image_as_base64
         ])
         .run(tauri::generate_context!())
-        .expect("error while running tauri application");
+        .expect("Произошла ошибка при запуске приложения");
 }
 
 #[tauri::command]
@@ -300,4 +308,27 @@ mod tests {
         assert_eq!(best_resolution(4_000), 180);
         assert_eq!(best_resolution(800), 100);
     }
+}
+
+async fn update(app: tauri::AppHandle) -> tauri_plugin_updater::Result<()> {
+    if let Some(update) = app.updater()?.check().await? {
+        let mut downloaded = 0;
+
+        update
+            .download_and_install(
+                |chunk_length, content_length| {
+                    downloaded += chunk_length;
+                    println!("Загружено {downloaded} из {content_length:?}");
+                },
+                || {
+                    println!("Загрузка завершена");
+                },
+            )
+            .await?;
+
+        println!("Обновление установлено");
+        app.restart();
+    }
+
+    Ok(())
 }
