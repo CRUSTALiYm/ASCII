@@ -34,11 +34,26 @@ struct ConvertResult {
     columns: u32,
     rows: u32,
     values: Vec<String>,
+    /// Pre-computed text representation. Keeping this beside `values` preserves
+    /// the existing response shape while preventing text generation in the UI.
+    text: String,
 }
 
 #[derive(Debug, Serialize)]
 struct BestSettings {
     resolution: u32,
+}
+
+fn best_resolution(width: u32) -> u32 {
+    (width / 8).clamp(64, 180)
+}
+
+fn values_to_text(values: &[String], columns: u32) -> String {
+    values
+        .chunks(columns.max(1) as usize)
+        .map(|row| row.concat())
+        .collect::<Vec<_>>()
+        .join("\n")
 }
 
 #[tauri::command]
@@ -54,7 +69,7 @@ fn find_best_settings(path: String, job_id: u64) -> Result<BestSettings, String>
         return Err("settings_search_cancelled".into());
     }
     Ok(BestSettings {
-        resolution: (image.width() / 8).clamp(64, 180),
+        resolution: best_resolution(image.width()),
     })
 }
 
@@ -136,10 +151,13 @@ fn convert_image_to_ascii(
         })
         .collect::<Result<Vec<_>, _>>()?;
 
+    let text = values_to_text(&values, columns);
+
     Ok(ConvertResult {
         columns,
         rows,
         values,
+        text,
     })
 }
 
@@ -247,4 +265,25 @@ pub fn run() {
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn conversion_result_text_is_row_major() {
+        let values = ["a", "b", "c", "d", "e", "f"]
+            .into_iter()
+            .map(String::from)
+            .collect::<Vec<_>>();
+        assert_eq!(values_to_text(&values, 3), "abc\ndef");
+    }
+
+    #[test]
+    fn settings_resolution_is_bounded() {
+        assert_eq!(best_resolution(1), 64);
+        assert_eq!(best_resolution(4_000), 180);
+        assert_eq!(best_resolution(800), 100);
+    }
 }

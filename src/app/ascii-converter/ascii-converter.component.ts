@@ -11,7 +11,7 @@ import { DatePipe } from "@angular/common";
 import { FormsModule } from "@angular/forms";
 import { convertFileSrc, invoke } from "@tauri-apps/api/core";
 import { listen, UnlistenFn } from "@tauri-apps/api/event";
-import { open, save } from "@tauri-apps/plugin-dialog";
+import { save } from "@tauri-apps/plugin-dialog";
 import { ButtonModule } from "primeng/button";
 import { DialogModule } from "primeng/dialog";
 import { InputNumberModule } from "primeng/inputnumber";
@@ -59,6 +59,7 @@ interface RustAsciiResult {
   columns: number;
   rows: number;
   values: string[];
+  text: string;
 }
 
 interface ConversionProgress {
@@ -99,6 +100,8 @@ export class AsciiConverterComponent
   @ViewChild("resultCanvas") resultCanvas?: ElementRef<HTMLCanvasElement>;
   @ViewChild("compareStage") compareStage?: ElementRef<HTMLElement>;
   @ViewChild("customPreviewCanvas") customPreviewCanvas?: ElementRef<HTMLCanvasElement>;
+  @ViewChild("fileInput") fileInput?: ElementRef<HTMLInputElement>;
+  @ViewChild("replaceFileInput") replaceFileInput?: ElementRef<HTMLInputElement>;
 
   readonly viewModes = [
     { label: "Результат", value: "result", icon: "pi pi-sparkles" },
@@ -165,7 +168,6 @@ export class AsciiConverterComponent
   private nativeJobId = 0;
   private progressUnlisten?: UnlistenFn;
   conversionMessage = "Обработка...";
-  private pendingResolution?: number;
   private settingsSearchVersion = 0;
   canvasDisplayWidth = 1;
   canvasDisplayHeight = 1;
@@ -303,19 +305,8 @@ export class AsciiConverterComponent
   }
 
   async openImageFile(): Promise<void> {
-    try {
-      const selected = await open({
-        multiple: false,
-        directory: false,
-        filters: [{ name: "Изображения", extensions: ["png", "jpg", "jpeg", "webp", "bmp"] }],
-      });
-      if (typeof selected === "string") {
-        const name = selected.split(/[\\/]/).pop() ?? "image";
-        await this.loadImagePath(selected, name);
-      }
-    } catch (error) {
-      this.conversionMessage = `Не удалось открыть проводник: ${String(error)}`;
-    }
+    const input = this.hasImage ? this.replaceFileInput : this.fileInput;
+    input?.nativeElement.click();
   }
 
   private async loadImagePath(path: string, name: string): Promise<void> {
@@ -333,7 +324,7 @@ export class AsciiConverterComponent
       this.imageLoaded = true;
       this.imageWidth = image.naturalWidth;
       this.imageHeight = image.naturalHeight;
-      void this.findBestInitialSettings();
+      if (this.imagePath) void this.findBestInitialSettings();
     };
     image.onerror = () => {
       this.conversionMessage = "Не удалось открыть изображение.";
@@ -381,13 +372,13 @@ export class AsciiConverterComponent
       this.imageLoaded = true;
       this.imageWidth = image.naturalWidth;
       this.imageHeight = image.naturalHeight;
-      void this.findBestInitialSettings();
+      if (this.imagePath) void this.findBestInitialSettings();
     };
     image.src = this.imageUrl;
   }
 
   private async findBestInitialSettings(): Promise<void> {
-    if (!this.sourceImage) return;
+    if (!this.sourceImage || !this.imagePath) return;
     const version = ++this.settingsSearchVersion;
     this.isFindingSettings = true;
     let settings: { resolution: number };
@@ -418,7 +409,6 @@ export class AsciiConverterComponent
 
   updatePreview(): void {
     this.cancelSettingsSearch();
-    this.pendingResolution = undefined;
     this.cancelNativeConversion();
     if (this.renderTimer) clearTimeout(this.renderTimer);
     this.renderTimer = setTimeout(() => this.renderResult(), 140);
@@ -433,10 +423,6 @@ export class AsciiConverterComponent
       this.resolution = Math.max(24, Math.min(300, Math.round(Number(value) || 24)));
     }
     this.cancelSettingsSearch();
-    if (this.isConverting) {
-      this.pendingResolution = this.resolution;
-      return;
-    }
     this.updatePreview();
   }
 
@@ -565,13 +551,7 @@ export class AsciiConverterComponent
       filters: [{ name: this.exportFormat === "txt" ? "ASCII text" : "PNG image", extensions: [extension] }],
     });
     if (!selectedPath) return;
-    const values = this.rustResult?.values ?? [];
-    const columns = this.rustResult?.columns ?? 1;
-    const text = values.length ? values.reduce((rows, character, index) => {
-      const row = Math.floor(index / columns);
-      rows[row] = (rows[row] ?? "") + character;
-      return rows;
-    }, [] as string[]).join("\n") : this.asciiText;
+    const text = this.rustResult?.text ?? this.asciiText;
     const png = canvas.toDataURL("image/png", 1);
     if (this.exportFormat === "all") {
       const basePath = selectedPath.replace(/\.[^.\\/]+$/, "");
@@ -660,11 +640,7 @@ export class AsciiConverterComponent
           await new Promise<void>((resolve) => setTimeout(resolve, 0));
         }
       }
-      this.asciiText = this.rustResult.values.reduce((rows, character, index) => {
-        const row = Math.floor(index / this.rustResult!.columns);
-        rows[row] = (rows[row] ?? "") + character;
-        return rows;
-      }, [] as string[]).join("\n");
+      this.asciiText = this.rustResult.text;
       this.renderCustomPreview();
       this.conversionProgress = 100;
     } catch (error) {
@@ -674,17 +650,8 @@ export class AsciiConverterComponent
       }
     } finally {
       this.nativeJobId = 0;
-      if (version === this.renderVersion) {
-        this.isConverting = false;
-        this.startPendingResolution(version);
-      }
+      if (version === this.renderVersion) this.isConverting = false;
     }
-  }
-
-  private startPendingResolution(version: number): void {
-    if (version !== this.renderVersion || this.pendingResolution === undefined) return;
-    this.pendingResolution = undefined;
-    this.renderResult();
   }
 
   private measureCharacter(): { width: number; height: number; fontSize: number } {
