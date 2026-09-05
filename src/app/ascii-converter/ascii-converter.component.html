@@ -1,0 +1,241 @@
+<div class="workspace" [class.workspace--with-sidebar]="hasHistory && !isSidebarCollapsed">
+  @if (hasHistory && !isSidebarCollapsed) {
+  <aside class="sidebar">
+    <div class="brand-mark"><span>AT</span></div>
+    <div class="sidebar__copy">
+      <span class="eyebrow">IMAGE LAB</span>
+      <h1>ASCII<br /><em>converter</em></h1>
+      <p>Превращайте фотографии в выразительные символьные композиции.</p>
+    </div>
+
+    <div class="history-head">
+      <span>История</span>
+      <button class="icon-action" type="button" aria-label="Очистить историю" title="Очистить историю" (click)="clearHistory()">
+        <i class="pi pi-trash"></i>
+      </button>
+    </div>
+    <div class="history-list">
+      @if (isLoading) {
+        <span class="muted">Загрузка...</span>
+      } @else if (displayedHistory.length === 0) {
+        <span class="muted">Здесь появятся ваши последние изображения</span>
+      } @else {
+        @for (item of displayedHistory; track item.id) {
+          <div class="history-item">
+            <span class="history-item__icon"><i class="pi pi-image"></i></span>
+            <span class="history-item__text">
+              <strong>{{ item.name }}</strong>
+              <small>{{ item.createdAt | date: "dd.MM.yy, HH:mm" }}</small>
+            </span>
+          </div>
+        }
+      }
+    </div>
+
+    <div class="sidebar-footer">
+      <span class="status-dot"></span>
+      <span>Локальная обработка</span>
+      <i class="pi pi-shield"></i>
+    </div>
+    <button class="collapse-history" type="button" title="Свернуть историю" aria-label="Свернуть историю" (click)="isSidebarCollapsed = true">
+      <i class="pi pi-angle-left"></i>
+    </button>
+  </aside>
+  }
+
+  <section class="main-panel">
+    <div class="topline">
+      <div>
+        <span class="section-kicker">WORKSPACE / 01</span>
+        <h2>Новый конверт</h2>
+      </div>
+      <div class="topline__actions">
+        @if (hasHistory && isSidebarCollapsed) {
+          <button class="restore-history" type="button" title="Показать историю" aria-label="Показать историю" (click)="isSidebarCollapsed = false"><i class="pi pi-angle-right"></i></button>
+        }
+        <span class="format-badge"><i class="pi pi-bolt"></i> LIVE PREVIEW</span>
+        @if (hasImage) {
+          <p-button icon="pi pi-download" label="Экспорт" [text]="true" severity="secondary" (onClick)="openExportDialog()"></p-button>
+        }
+      </div>
+    </div>
+
+    <div class="content-grid">
+      <section class="preview-column">
+        <div
+          class="drop-zone"
+          [class.drop-zone--active]="isDragging"
+          [class.drop-zone--loaded]="hasImage"
+          (drop)="onDrop($event)"
+          (dragover)="onDragOver($event)"
+          (dragleave)="onDragLeave()"
+        >
+          @if (!hasImage) {
+            <div class="empty-state">
+              <div class="upload-orbit"><i class="pi pi-arrow-up-right"></i></div>
+              <h3>Перетащите фото сюда</h3>
+              <p>PNG, JPG или WEBP · до 20 МБ</p>
+              <input #fileInput class="visually-hidden" type="file" accept="image/*" (change)="onFileSelected($event)" />
+              <p-button label="Выбрать из папки" icon="pi pi-folder-open" (onClick)="openImageFile()"></p-button>
+            </div>
+          } @else {
+            <div class="preview-header">
+              <span><i class="pi pi-image"></i> {{ imageName }} <small class="image-dimensions">{{ imageWidth }} × {{ imageHeight }} px</small></span>
+              <div class="preview-actions">
+                <span class="preview-size">{{ resolution }} cols</span>
+                <input #replaceFileInput class="visually-hidden" type="file" accept="image/*" (change)="onFileSelected($event)" />
+                <button class="compact-action" type="button" title="Выбрать другое фото" (click)="openImageFile()"><i class="pi pi-refresh"></i></button>
+              </div>
+            </div>
+            @if (isConverting || isFindingSettings) {
+              <p-progressbar class="conversion-progress" [value]="conversionProgress" [showValue]="false"></p-progressbar>
+            }
+            <div #compareStage class="compare-stage" [class.compare-stage--overlay]="viewMode === 'overlay'" [class.compare-stage--split]="viewMode === 'split'">
+              @if (viewMode !== 'result') {
+                <img class="source-image" [src]="imageUrl" [style.filter]="originalFilter" alt="Исходное изображение" />
+              }
+              <canvas #resultCanvas class="ascii-canvas" [class.ascii-canvas--hidden]="viewMode === 'original'" [style.width.px]="canvasDisplayWidth" [style.height.px]="canvasDisplayHeight" [style.clip-path]="viewMode === 'split' ? 'inset(0 0 0 ' + splitPosition + '%)' : null"></canvas>
+              @if (viewMode === 'overlay') {
+                <img class="overlay-image" [src]="imageUrl" [style.filter]="originalFilter" alt="Наложение оригинала" />
+              }
+              @if (viewMode === 'split') {
+                <div class="split-line" [style.left.%]="splitPosition"></div>
+              }
+                @if (isConverting || isFindingSettings) {
+                  <div class="conversion-status"><i class="pi pi-spin pi-spinner"></i><span>{{ isFindingSettings ? 'Подбор параметров...' : conversionMessage + ' ' + resolution + ' cols...' }}</span></div>
+                }
+            </div>
+            @if (viewMode === 'split') {
+              <div class="split-control">
+                <span>Оригинал</span>
+                <p-slider [(ngModel)]="splitPosition" [min]="10" [max]="90" (onSlide)="previewWhileChanging()" (onChange)="updatePreview()"></p-slider>
+                <span>ASCII</span>
+              </div>
+            }
+          }
+        </div>
+
+        <div class="view-toolbar">
+          <div class="mode-switcher">
+            @for (mode of viewModes; track mode.value) {
+                <button class="mode-button" [class.mode-button--active]="viewMode === mode.value" type="button" (click)="selectViewMode(mode.value)">
+                <i [class]="mode.icon"></i><span>{{ mode.label }}</span>
+              </button>
+            }
+          </div>
+          <span class="canvas-meta"><i class="pi pi-expand"></i> {{ resolution }} × auto</span>
+        </div>
+      </section>
+
+      <aside class="controls-panel">
+        <div class="panel-heading">
+          <span class="section-kicker">ADJUSTMENTS</span>
+          <div class="panel-heading__actions">
+            @if (hasChanges) { <span class="changed-indicator">изменено</span> }
+            <button class="reset-action" type="button" [disabled]="!hasChanges" title="Сбросить параметры" aria-label="Сбросить параметры" (click)="resetSettings()"><i class="pi pi-replay"></i></button>
+            <span class="live-indicator"><span></span> live</span>
+          </div>
+        </div>
+
+        <div class="control-group">
+          <label for="characters">Набор символов</label>
+          <div class="select-row">
+            <p-select id="characters" [options]="presetOptions" [(ngModel)]="selectedPreset" optionLabel="label" optionValue="value" (onChange)="updatePreview()" class="wide-select"></p-select>
+            <p-button icon="pi pi-plus" [text]="true" severity="secondary" ariaLabel="Добавить набор символов" (onClick)="openCharacterDialog()"></p-button>
+            @if (selectedPresetOption.custom) {
+              <p-button icon="pi pi-pencil" [text]="true" severity="secondary" ariaLabel="Изменить набор символов" (onClick)="openCharacterDialog(selectedPresetOption)"></p-button>
+              <p-button icon="pi pi-trash" [text]="true" severity="secondary" ariaLabel="Удалить набор символов" (onClick)="deleteCharacterSet(selectedPresetOption)"></p-button>
+            }
+          </div>
+          <small class="helper-text">{{ selectedPresetOption.description }} · {{ selectedPreset.length }} знаков</small>
+          <small class="character-preview-text">{{ selectedPreset }}</small>
+        </div>
+
+        <div class="control-group">
+          <div class="control-label"><label for="tone">Тональность</label><button class="field-reset" [class.field-reset--changed]="selectedTone !== 'mono'" type="button" title="Сбросить тональность" (click)="resetSetting('selectedTone')"><i class="pi pi-replay"></i></button></div>
+          <p-select id="tone" [options]="toneOptions" [(ngModel)]="selectedTone" optionLabel="label" optionValue="value" (onChange)="updatePreview()" class="wide-select"></p-select>
+        </div>
+
+        <div class="control-group slider-group">
+          <div class="label-line"><div class="control-label"><label for="resolution">Разрешение</label><button class="field-reset" [class.field-reset--changed]="resolution !== 100" type="button" title="Сбросить разрешение" (click)="resetSetting('resolution')"><i class="pi pi-replay"></i></button></div><strong>{{ resolution }} cols</strong></div>
+          <div class="resolution-input"><p-inputnumber id="resolution" [(ngModel)]="resolution" [min]="24" [max]="300" [useGrouping]="false" (ngModelChange)="resolutionChanged($event)"></p-inputnumber><span>ручной ввод</span></div>
+          <p-slider id="resolution-slider" [(ngModel)]="resolution" [min]="24" [max]="300" (onSlide)="previewWhileChanging()" (onChange)="resolutionChanged()"></p-slider>
+          <div class="range-labels"><span>детально</span><span>крупно</span></div>
+        </div>
+
+        <div class="control-group slider-group">
+          <div class="label-line"><div class="control-label"><label for="brightness">Яркость</label><button class="field-reset" [class.field-reset--changed]="brightness !== 0" type="button" title="Сбросить яркость" (click)="resetSetting('brightness')"><i class="pi pi-replay"></i></button></div><strong>{{ brightness > 0 ? "+" : "" }}{{ brightness }}</strong></div>
+          <p-slider id="brightness" [(ngModel)]="brightness" [min]="-100" [max]="100" (onSlide)="previewWhileChanging()" (onChange)="updatePreview()"></p-slider>
+        </div>
+
+        <div class="control-group slider-group">
+          <div class="label-line"><div class="control-label"><label for="contrast">Контраст</label><button class="field-reset" [class.field-reset--changed]="contrast !== 0" type="button" title="Сбросить контраст" (click)="resetSetting('contrast')"><i class="pi pi-replay"></i></button></div><strong>{{ contrast > 0 ? "+" : "" }}{{ contrast }}</strong></div>
+          <p-slider id="contrast" [(ngModel)]="contrast" [min]="-100" [max]="100" (onSlide)="previewWhileChanging()" (onChange)="updatePreview()"></p-slider>
+        </div>
+
+        <div class="toggle-row">
+          <div><strong>Инверсия</strong><small>Светлое на тёмном</small></div>
+          <p-togglebutton [(ngModel)]="invert" onLabel="ON" offLabel="OFF" (onChange)="updatePreview()"></p-togglebutton>
+        </div>
+
+        <div class="toggle-row source-controls">
+          <div><strong>Чёрно-белый оригинал</strong><small>Применяется к preview и сравнению</small></div>
+          <p-togglebutton [(ngModel)]="sourceBlackWhite" onLabel="ON" offLabel="OFF" (onChange)="updatePreview()"></p-togglebutton>
+        </div>
+
+        <div class="toggle-row source-controls">
+          <div><strong>Инверсия оригинала</strong><small>Отдельно от ASCII результата</small></div>
+          <p-togglebutton [(ngModel)]="sourceInvert" onLabel="ON" offLabel="OFF" (onChange)="updatePreview()"></p-togglebutton>
+        </div>
+
+        <div class="control-group slider-group compact-group">
+          <div class="label-line"><div class="control-label"><label>Порог ЧБ</label><button class="field-reset" [class.field-reset--changed]="sourceThreshold !== 50" type="button" title="Сбросить порог" (click)="resetSetting('sourceThreshold')"><i class="pi pi-replay"></i></button></div><strong>{{ sourceThreshold }}%</strong></div>
+          <p-slider [(ngModel)]="sourceThreshold" [min]="5" [max]="95" (onSlide)="previewWhileChanging()" (onChange)="updatePreview()"></p-slider>
+        </div>
+
+        <div class="control-group slider-group compact-group">
+          <div class="label-line"><div class="control-label"><label>Яркость оригинала</label><button class="field-reset" [class.field-reset--changed]="sourceBrightness !== 0" type="button" title="Сбросить яркость оригинала" (click)="resetSetting('sourceBrightness')"><i class="pi pi-replay"></i></button></div><strong>{{ sourceBrightness > 0 ? "+" : "" }}{{ sourceBrightness }}</strong></div>
+          <p-slider [(ngModel)]="sourceBrightness" [min]="-50" [max]="50" (onSlide)="previewWhileChanging()" (onChange)="updatePreview()"></p-slider>
+        </div>
+
+        <div class="control-group slider-group compact-group">
+          <div class="label-line"><div class="control-label"><label>Контраст оригинала</label><button class="field-reset" [class.field-reset--changed]="sourceContrast !== 0" type="button" title="Сбросить контраст оригинала" (click)="resetSetting('sourceContrast')"><i class="pi pi-replay"></i></button></div><strong>{{ sourceContrast > 0 ? "+" : "" }}{{ sourceContrast }}</strong></div>
+          <p-slider [(ngModel)]="sourceContrast" [min]="-50" [max]="50" (onSlide)="previewWhileChanging()" (onChange)="updatePreview()"></p-slider>
+        </div>
+
+      </aside>
+    </div>
+  </section>
+</div>
+
+<p-dialog [header]="editingCharacterValue ? 'Изменить набор символов' : 'Новый набор символов'" [(visible)]="showCharacterDialog" [modal]="true" [style]="{ width: '520px' }" [draggable]="false">
+  <div class="dialog-content">
+    <p class="dialog-description">Символы идут от тёмного к светлому. Чем больше градаций, тем мягче результат.</p>
+    <input class="character-name-input" [(ngModel)]="newCharacterName" maxlength="32" placeholder="Название набора" />
+    <textarea [(ngModel)]="newCharacterSet" (ngModelChange)="renderCharacterPreview()" maxlength="80" placeholder="Например: .,:;irsXA253hMHGS#9B&@"></textarea>
+    <div class="dialog-preview">
+      <span class="section-kicker">PREVIEW</span>
+      <canvas #customPreviewCanvas></canvas>
+      <strong>{{ newCharacterSet || "Ваш набор" }}</strong>
+    </div>
+    <div class="dialog-actions">
+      <p-button label="Отмена" [text]="true" severity="secondary" (onClick)="showCharacterDialog = false"></p-button>
+      <p-button [label]="editingCharacterValue ? 'Сохранить изменения' : 'Добавить набор'" icon="pi pi-check" [disabled]="newCharacterSet.trim().length < 2" (onClick)="saveCharacterSet()"></p-button>
+    </div>
+  </div>
+</p-dialog>
+
+<p-dialog header="Экспорт результата" [(visible)]="showExportDialog" [modal]="true" [style]="{ width: '420px' }" [draggable]="false">
+  <div class="dialog-content export-dialog">
+    <label>Что сохранить</label>
+    <div class="export-options" role="radiogroup" aria-label="Что сохранить">
+      <button type="button" [class.export-option--active]="exportFormat === 'png'" (click)="exportFormat = 'png'"><i class="pi pi-image"></i><span>Изображение PNG</span></button>
+      <button type="button" [class.export-option--active]="exportFormat === 'txt'" (click)="exportFormat = 'txt'"><i class="pi pi-align-left"></i><span>Текст с символами</span></button>
+      <button type="button" [class.export-option--active]="exportFormat === 'all'" (click)="exportFormat = 'all'"><i class="pi pi-copy"></i><span>Изображение + текст</span></button>
+    </div>
+    <div class="dialog-actions">
+      <p-button label="Отмена" [text]="true" severity="secondary" (onClick)="showExportDialog = false"></p-button>
+      <p-button label="Сохранить" icon="pi pi-save" (onClick)="exportResult()"></p-button>
+    </div>
+  </div>
+</p-dialog>

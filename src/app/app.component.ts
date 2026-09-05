@@ -1,10 +1,10 @@
 import { Component } from "@angular/core";
-import { RouterOutlet } from "@angular/router";
 import { WindowTitlebarComponent } from "./window-titlebar/window-titlebar.component";
+import { AsciiConverterComponent } from "./ascii-converter/ascii-converter.component";
 
 @Component({
   selector: "app-root",
-  imports: [RouterOutlet, WindowTitlebarComponent],
+  imports: [WindowTitlebarComponent, AsciiConverterComponent],
   templateUrl: "./app.component.html",
   styleUrl: "./app.component.scss",
 })

@@ -4,11 +4,12 @@
 	overflow: hidden;
 	box-sizing: border-box;
 	border: 1px solid #2d323d;
-	border-radius: 12px;
+	border-radius: 7px;
 	background: #17191f;
 	box-shadow: 0 18px 48px rgba(0, 0, 0, 0.3);
 }
 
 .window-content {
 	height: calc(100vh - 32px);
+	overflow: hidden;
 }
