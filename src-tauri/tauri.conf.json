@@ -39,10 +39,10 @@
       "icons/icon.icns",
       "icons/icon.ico"
     ],
-    "publisher": "ТМ-ТЕХНОЛОГИИ",
+    "publisher": "CRUSTALiYm",
     "copyright": "Copyright © 2026 CRUSTALiYm.",
-    "shortDescription": "Программа для удобной загрузки и обновления корпоративных программ",
-    "longDescription": "Корпоративный клиент t-ascii, предназначенный для централизованной дистрибуции, установки и автоматического обновления рабочих приложений внутри компании.",
+    "shortDescription": "Простой и удобный Десктопный конвертер изображений в ASCII",
+    "longDescription": "Простой и удобный Десктопный конвертер изображений в ASCII.",
     "windows": {
       "wix": {
         "language": "ru-RU",
@@ -59,7 +59,7 @@
   "plugins": {
     "updater": {
       "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDQyODZCOTNERjdFOENEOTIKUldTU3plajNQYm1HUWc0REJqS2lkZ1pVSVRrOEY0OUlvb1BrSHJ6cWthMzZobUwvTFB3d3g3NWYK",
-      "endpoints": ["localhost:5665"],
+      "endpoints": ["https://github.com/CRUSTALiYm/ASCII/releases/latest/download/latest.json"],
       "dangerousInsecureTransportProtocol": true,
       "windows": {
         "installMode": "passive"
