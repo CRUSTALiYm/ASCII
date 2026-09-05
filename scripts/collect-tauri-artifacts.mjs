@@ -64,7 +64,7 @@ await mkdir(outputDirectory, { recursive: true });
 const version = await getTauriVersion();
 
 const DEPLOY_BASE_URL =
-  `https://github.com/CRUSTALiYm/ASCII/releases/v${version}/download`;
+  `https://github.com/CRUSTALiYm/ASCII/releases/download/v${version}`;
 
 const latestJson = {
   version: version,
