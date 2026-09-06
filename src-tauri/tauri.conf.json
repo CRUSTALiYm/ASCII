@@ -33,10 +33,13 @@
     "targets": "all",
     "createUpdaterArtifacts": true,
     "icon": [
-      "icons/icon.png",
-      "icons/ico-x32.ico",
-      "icons/ico-x128.ico",
-      "icons/ico-x256.ico"
+      "icons/32x32.png",
+      "icons/128x128.png",
+      "icons/128x128@2x.png",
+      "icons/512x512.png",
+      "icons/1254x1254.png",
+      "icons/icon.icns",
+      "icons/icon.ico"
     ],
     "publisher": "CRUSTALiYm",
     "copyright": "Copyright © 2026 CRUSTALiYm.",
