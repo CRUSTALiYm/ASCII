@@ -33,11 +33,10 @@
     "targets": "all",
     "createUpdaterArtifacts": true,
     "icon": [
-      "icons/32x32.png",
-      "icons/128x128.png",
-      "icons/128x128@2x.png",
-      "icons/icon.icns",
-      "icons/icon.ico"
+      "icons/icon.png",
+      "icons/ico-x32.ico",
+      "icons/ico-x128.ico",
+      "icons/ico-x256.ico"
     ],
     "publisher": "CRUSTALiYm",
     "copyright": "Copyright © 2026 CRUSTALiYm.",
@@ -49,8 +48,8 @@
         "upgradeCode": "07961c5b-e384-5196-8406-33096625b95b"
       },
       "nsis": {
-        "installerIcon": "icons/icon.ico",
-        "uninstallerIcon": "icons/icon.ico",
+        "installerIcon": "icons/Package.ico",
+        "uninstallerIcon": "icons/Uninstall.ico",
         "languages": ["Russian", "English"],
         "displayLanguageSelector": true
       }
@@ -59,7 +58,9 @@
   "plugins": {
     "updater": {
       "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDQyODZCOTNERjdFOENEOTIKUldTU3plajNQYm1HUWc0REJqS2lkZ1pVSVRrOEY0OUlvb1BrSHJ6cWthMzZobUwvTFB3d3g3NWYK",
-      "endpoints": ["https://github.com/CRUSTALiYm/ASCII/releases/latest/download/latest.json"],
+      "endpoints": [
+        "https://github.com/CRUSTALiYm/ASCII/releases/latest/download/latest.json"
+      ],
       "dangerousInsecureTransportProtocol": true,
       "windows": {
         "installMode": "passive"
