@@ -158,8 +158,8 @@
 
         <div class="control-group slider-group">
           <div class="label-line"><div class="control-label"><label for="resolution">Разрешение</label><button class="field-reset" [class.field-reset--changed]="resolution !== 100" type="button" title="Сбросить разрешение" (click)="resetSetting('resolution')"><i class="pi pi-replay"></i></button></div><strong>{{ resolution }} cols</strong></div>
-          <div class="resolution-input"><p-inputnumber id="resolution" [(ngModel)]="resolution" [min]="24" [max]="300" [useGrouping]="false" (ngModelChange)="resolutionChanged($event)"></p-inputnumber><span>ручной ввод</span></div>
-          <p-slider id="resolution-slider" [(ngModel)]="resolution" [min]="24" [max]="300" (onSlide)="previewWhileChanging()" (onChange)="resolutionChanged()"></p-slider>
+          <div class="resolution-input"><p-inputnumber id="resolution" [(ngModel)]="resolution" [min]="10" [useGrouping]="false" (ngModelChange)="resolutionChanged($event)"></p-inputnumber><span>ручной ввод</span></div>
+          <p-slider id="resolution-slider" [(ngModel)]="resolution" [min]="24" [max]="600" (onSlide)="previewWhileChanging()" (onChange)="resolutionChanged()"></p-slider>
           <div class="range-labels"><span>детально</span><span>крупно</span></div>
         </div>
 

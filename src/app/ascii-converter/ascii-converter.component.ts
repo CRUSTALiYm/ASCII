@@ -519,10 +519,7 @@ export class AsciiConverterComponent
 
   resolutionChanged(value?: number | null): void {
     if (value !== undefined) {
-      this.resolution = Math.max(
-        24,
-        Math.min(300, Math.round(Number(value) || 24)),
-      );
+      this.resolution = Number(value)
     }
     this.cancelSettingsSearch();
     this.updatePreview();
