@@ -2,6 +2,7 @@
     "files.exclude": {
         "**/node_modules": true,
         "**/.angular": true,
+        "**/.gigacode*": true,
         "**/target/**/debug": true,
         "**/target/**/flycheck0": true,
         "**/target/**/*-lock": true,
