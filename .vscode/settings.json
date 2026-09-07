@@ -1,5 +1,20 @@
 {
     "files.exclude": {
-        "**/node_modules": true
+        "**/node_modules": true,
+        "**/.angular": true,
+        "**/target/**/debug": true,
+        "**/target/**/flycheck0": true,
+        "**/target/**/*-lock": true,
+        "**/target/**/build": true,
+        "**/target/**/deps": true,
+        "**/target/**/.*": true,
+        "**/target/**/examples": true,
+        "**/target/**/incremental": true,
+        "**/target/**/resources": true,
+        "**/target/**/release/nsis": true,
+        "**/target/**/release/wix": true,
+        "**/target/**/*.pdb": true,
+        "**/target/**/*.d": true,
+        "**/target/**/*.TAG": true,
     }
 }
