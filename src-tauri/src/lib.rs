@@ -39,19 +39,20 @@
 //! --------------------------------------------------------------------------
 
 use base64::Engine;
-use image::{DynamicImage, GenericImageView};
 use image::imageops::FilterType;
+use image::DynamicImage;
 use image::ImageReader;
 use rayon::prelude::*;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use std::collections::HashMap;
 use std::fs;
-use std::io::Cursor;
 use std::path::PathBuf;
 use std::sync::Mutex;
 use tauri::{AppHandle, Emitter, Manager, State};
 use tauri_plugin_updater::UpdaterExt;
+#[cfg(any(feature = "camera", feature = "screen"))]
+use std::io::Cursor;
 
 // ============================================================================
 // РЕЕСТР ФОНОВЫХ ЗАДАЧ
@@ -293,7 +294,11 @@ fn compute_cell_stats(luma: &image::GrayImage, columns: u32, rows: u32) -> Vec<C
             };
             let p_low = percentile_from_histogram(&histogram, 0.05);
             let p_high = percentile_from_histogram(&histogram, 0.95);
-            CellStats { mean, p_low, p_high }
+            CellStats {
+                mean,
+                p_low,
+                p_high,
+            }
         })
         .collect()
 }
@@ -498,7 +503,8 @@ fn render_legacy(
                     1.0
                 };
             }
-            value = apply_brightness_contrast(value, params.brightness, params.contrast, params.invert);
+            value =
+                apply_brightness_contrast(value, params.brightness, params.contrast, params.invert);
             ((value * level_count as f32) as usize).min(level_count.saturating_sub(1))
         })
         .collect()
@@ -547,7 +553,10 @@ fn process_dynamic_image_to_ascii(
         render_legacy(&image, columns, rows, params, levels.len())
     };
 
-    let values: Vec<String> = cell_levels.iter().map(|&index| levels[index].to_string()).collect();
+    let values: Vec<String> = cell_levels
+        .iter()
+        .map(|&index| levels[index].to_string())
+        .collect();
     let text = values_to_text(&values, columns);
 
     let _ = app.emit(
@@ -859,12 +868,9 @@ fn list_render_backends() -> Vec<RenderBackendInfo> {
         is_default: false,
     }];
 
-    let instance = wgpu::Instance::new(wgpu::InstanceDescriptor {
-        backends: wgpu::Backends::all(),
-        ..Default::default()
-    });
+    let instance = wgpu::Instance::new(wgpu::InstanceDescriptor::new_without_display_handle());
 
-    for adapter in instance.enumerate_adapters(wgpu::Backends::all()) {
+    for adapter in pollster::block_on(instance.enumerate_adapters(wgpu::Backends::all())) {
         let info = adapter.get_info();
         // Программные (CPU-эмулированные) адаптеры уже покрыты пунктом "cpu" —
         // не дублируем их отдельной строкой в списке.
@@ -943,7 +949,8 @@ struct CameraDeviceInfo {
 #[cfg(feature = "camera")]
 #[tauri::command]
 fn list_camera_devices() -> Result<Vec<CameraDeviceInfo>, String> {
-    let devices = nokhwa::query(nokhwa::utils::ApiBackend::Auto).map_err(|error| error.to_string())?;
+    let devices =
+        nokhwa::query(nokhwa::utils::ApiBackend::Auto).map_err(|error| error.to_string())?;
     Ok(devices
         .into_iter()
         .enumerate()
@@ -1017,10 +1024,10 @@ fn list_screen_sources() -> Result<Vec<ScreenSourceInfo>, String> {
     let monitors = xcap::Monitor::all().map_err(|error| error.to_string())?;
     for monitor in monitors {
         sources.push(ScreenSourceInfo {
-            id: format!("monitor:{}", monitor.id()),
-            label: monitor.name().to_string(),
-            width: monitor.width(),
-            height: monitor.height(),
+            id: format!("monitor:{}", monitor.id().map_err(|e| e.to_string())?),
+            label: monitor.name().map_err(|e| e.to_string())?,
+            width: monitor.width().map_err(|e| e.to_string())?,
+            height: monitor.height().map_err(|e| e.to_string())?,
             kind: "monitor".into(),
         });
     }
@@ -1029,14 +1036,14 @@ fn list_screen_sources() -> Result<Vec<ScreenSourceInfo>, String> {
     // конвертировать конкретное приложение, а не весь монитор целиком.
     if let Ok(windows) = xcap::Window::all() {
         for window in windows {
-            if window.is_minimized() {
+            if window.is_minimized().map_err(|e| e.to_string())? {
                 continue;
             }
             sources.push(ScreenSourceInfo {
-                id: format!("window:{}", window.id()),
-                label: window.title().to_string(),
-                width: window.width(),
-                height: window.height(),
+                id: format!("window:{}", window.id().map_err(|e| e.to_string())?),
+                label: window.title().map_err(|e| e.to_string())?,
+                width: window.width().map_err(|e| e.to_string())?,
+                height: window.height().map_err(|e| e.to_string())?,
                 kind: "window".into(),
             });
         }
@@ -1055,17 +1062,15 @@ fn capture_screen_frame(source_id: String) -> Result<String, String> {
         let monitor = xcap::Monitor::all()
             .map_err(|error| error.to_string())?
             .into_iter()
-            .find(|monitor| monitor.id() == monitor_id)
+            .find(|monitor| monitor.id().ok() == Some(monitor_id))
             .ok_or_else(|| "Монитор не найден".to_string())?;
         monitor.capture_image().map_err(|error| error.to_string())?
     } else if let Some(id) = source_id.strip_prefix("window:") {
-        let window_id: u32 = id
-            .parse()
-            .map_err(|_| "Некорректный id окна".to_string())?;
+        let window_id: u32 = id.parse().map_err(|_| "Некорректный id окна".to_string())?;
         let window = xcap::Window::all()
             .map_err(|error| error.to_string())?
             .into_iter()
-            .find(|window| window.id() == window_id)
+            .find(|window| window.id().ok() == Some(window_id))
             .ok_or_else(|| "Окно не найдено".to_string())?;
         window.capture_image().map_err(|error| error.to_string())?
     } else {
@@ -1275,7 +1280,10 @@ mod tests {
         }
         histogram[255] = 1;
         let p_high = percentile_from_histogram(&histogram, 0.98);
-        assert!(p_high < 200, "единичный выброс не должен растягивать диапазон: {p_high}");
+        assert!(
+            p_high < 200,
+            "единичный выброс не должен растягивать диапазон: {p_high}"
+        );
     }
 
     #[test]

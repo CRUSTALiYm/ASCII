@@ -4,6 +4,7 @@ version = "0.2.0"
 description = "Простой и удобный Десктопный конвертер изображений в ASCII"
 authors = ["CRUSTALiYm"]
 edition = "2021"
+resolver = "2"
 
 [lib]
 name = "t_steam_lib"
