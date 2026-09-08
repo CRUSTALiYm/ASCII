@@ -1,7 +1,7 @@
 {
   "name": "t-ascii",
   "description": "Простой и удобный Десктопный конвертер изображений в ASCII",
-  "version": "0.1.4",
+  "version": "0.2.0",
   "productName": "Конвертер ASCII",
   "type": "module",
   "scripts": {
@@ -11,10 +11,11 @@
     "watch": "ng build --watch --configuration development",
     "tauri": "tauri",
     "tauri:start": "tauri dev",
+    "tauri:start:full": "tauri dev --features full",
     "tauri:build:all": "npm run tauri:build:x64 && npm run tauri:build:x86 && npm run tauri:build:arm64 && npm run tauri:collect",
-    "tauri:build:x64": "dotenv tauri build -- --target x86_64-pc-windows-msvc",
-    "tauri:build:x86": "dotenv tauri build -- --target i686-pc-windows-msvc",
-    "tauri:build:arm64": "dotenv tauri build -- --target aarch64-pc-windows-msvc",
+    "tauri:build:x64": "dotenv tauri build -- --target x86_64-pc-windows-msvc --features full",
+    "tauri:build:x86": "dotenv tauri build -- --target i686-pc-windows-msvc --features full",
+    "tauri:build:arm64": "dotenv tauri build -- --target aarch64-pc-windows-msvc --features full",
     "tauri:collect": "node scripts/collect-tauri-artifacts.mjs"
   },
   "private": true,

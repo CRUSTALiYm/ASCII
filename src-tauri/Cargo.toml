@@ -1,16 +1,11 @@
 [package]
 name = "t-ascii"
-version = "0.1.4"
+version = "0.2.0"
 description = "Простой и удобный Десктопный конвертер изображений в ASCII"
 authors = ["CRUSTALiYm"]
 edition = "2021"
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-
 [lib]
-# The `_lib` suffix may seem redundant but it is necessary
-# to make the lib name unique and wouldn't conflict with the bin name.
-# This seems to be only an issue on Windows, see https://github.com/rust-lang/cargo/issues/8519
 name = "t_steam_lib"
 crate-type = ["staticlib", "cdylib", "rlib"]
 
@@ -26,7 +21,18 @@ image = "0.25"
 base64 = "0.22"
 tauri-plugin-dialog = "2.7.3"
 rayon = "1.11"
+wgpu = { version = "30", optional = true }
+pollster = { version = "0.4", optional = true }
+nokhwa = { version = "0.10", default-features = false, features = ["input-native"], optional = true }
+xcap = { version = "0.6", optional = true }
+bytemuck = { version = "1", features = ["derive"], optional = true }
 
 [target.'cfg(not(any(target_os = "android", target_os = "ios")))'.dependencies]
 tauri-plugin-updater = "2"
 
+[features]
+default = []
+gpu-backends = ["dep:wgpu", "dep:pollster", "dep:bytemuck"]
+camera = ["dep:nokhwa"]
+screen = ["dep:xcap"]
+full = ["gpu-backends", "camera", "screen"]
