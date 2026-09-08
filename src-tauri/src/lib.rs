@@ -1224,6 +1224,8 @@ pub fn run() {
 }
 
 async fn update(app: tauri::AppHandle) -> tauri_plugin_updater::Result<()> {
+    println!("{:#?}", list_render_backends());
+
     if let Some(update) = app.updater()?.check().await? {
         let mut downloaded = 0;
 
