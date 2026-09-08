@@ -321,7 +321,7 @@ fn smooth_cell_ranges(
 ) -> Vec<(f32, f32)> {
     let columns_i = columns as i32;
     let rows_i = rows as i32;
-    const MIN_GAP: f32 = 18.0;
+    const MIN_GAP: f32 = 30.0; // дать возможность самому редактировать
 
     (0..cells.len())
         .map(|index| {
