@@ -4,7 +4,6 @@ version = "0.2.0"
 description = "Простой и удобный Десктопный конвертер изображений в ASCII"
 authors = ["CRUSTALiYm"]
 edition = "2021"
-resolver = "2"
 
 [lib]
 name = "t_steam_lib"
@@ -22,18 +21,23 @@ image = "0.25"
 base64 = "0.22"
 tauri-plugin-dialog = "2.7.3"
 rayon = "1.11"
-wgpu = { version = "30", optional = true }
+wgpu = { version = "30", optional = true, default-features = false, features = ["std", "parking_lot", "vulkan", "gles", "wgsl"] }
 pollster = { version = "0.4", optional = true }
 nokhwa = { version = "0.10", default-features = false, features = ["input-native"], optional = true }
 xcap = { version = "0.6", optional = true }
-bytemuck = { version = "1", features = ["derive"], optional = true }
+cudarc = { version = "0.19", optional = true }
+opencl3 = { version = "0.12", optional = true }
 
 [target.'cfg(not(any(target_os = "android", target_os = "ios")))'.dependencies]
 tauri-plugin-updater = "2"
 
 [features]
 default = []
-gpu-backends = ["dep:wgpu", "dep:pollster", "dep:bytemuck"]
+
+gpu-backends = ["dep:wgpu", "dep:pollster"]
 camera = ["dep:nokhwa"]
 screen = ["dep:xcap"]
-full = ["gpu-backends", "camera", "screen"]
+cuda = ["dep:cudarc", "cudarc/cuda-version-from-build-system"]
+opencl = ["dep:opencl3"]
+
+full = ["gpu-backends", "camera", "screen", "cuda", "opencl"]
