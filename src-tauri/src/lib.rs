@@ -1,22 +1,16 @@
-#[path = "lib/adaptive.rs"]
-mod adaptive;
-#[path = "lib/camera.rs"]
-mod camera;
-#[path = "lib/compute/mod.rs"]
-mod compute;
-#[path = "lib/engine.rs"]
-mod engine;
-#[path = "lib/jobs.rs"]
-mod jobs;
-#[path = "lib/params.rs"]
-mod params;
-#[path = "lib/render_backends.rs"]
-mod render_backends;
-#[path = "lib/screen.rs"]
-mod screen;
-#[path = "lib/storage.rs"]
-mod storage;
+mod lib {
+    pub mod adaptive;
+    pub mod camera;
+    pub mod compute;
+    pub mod engine;
+    pub mod jobs;
+    pub mod params;
+    pub mod render_backends;
+    pub mod screen;
+    pub mod storage;
+}
 
+use lib::*;
 use jobs::JobRegistry;
 use tauri_plugin_updater::UpdaterExt;
 
