@@ -1,15 +1,9 @@
 use crate::compute;
+use crate::compute::PixelScanResult;
 use crate::params::AsciiParams;
 use image::imageops::FilterType;
 use image::DynamicImage;
 use rayon::prelude::*;
-
-// Диапазон нормализации клетки считается НЕ по её же пикселям (иначе
-// средняя яркость клетки всегда попадает в середину своего диапазона —
-// всё становится ровным серым), а по крупной региональной сетке
-// (tiles x tiles), с билинейной интерполяцией на каждую ASCII-клетку.
-// Схема: global stats -> region stats (percentile) -> сглаживание по
-// соседним регионам -> билинейная интерполяция под клетку -> нормализация.
 
 #[derive(Clone, Copy)]
 struct RegionStats {
@@ -38,45 +32,27 @@ fn percentile_from_histogram(histogram: &[u32; 256], percentile: f32) -> u8 {
     255
 }
 
-fn compute_global_stats(luma: &image::GrayImage, trim: f32) -> GlobalLumaStats {
+/// Глобальная статистика получается суммированием готовых региональных
+/// гистограмм — отдельного прохода по пикселям для неё не нужно, регионы
+/// и так разбивают все пиксели без пропусков и наложений.
+fn build_global_stats(region_histograms: &[[u32; 256]], trim: f32) -> GlobalLumaStats {
     let mut histogram = [0u32; 256];
-    for pixel in luma.pixels() {
-        histogram[pixel[0] as usize] += 1;
+    for region in region_histograms {
+        for (level, &count) in region.iter().enumerate() {
+            histogram[level] += count;
+        }
     }
     let p_low = percentile_from_histogram(&histogram, trim);
     let p_high = percentile_from_histogram(&histogram, 1.0 - trim).max(p_low + 1);
     GlobalLumaStats { p_low, p_high }
 }
 
-fn compute_region_stats(
-    luma: &image::GrayImage,
-    tiles_x: u32,
-    tiles_y: u32,
-    trim: f32,
-) -> Vec<RegionStats> {
-    let (width, height) = luma.dimensions();
-    (0..(tiles_y * tiles_x))
-        .into_par_iter()
-        .map(|index| {
-            let col = index % tiles_x;
-            let row = index / tiles_x;
-            let x0 = (width as u64 * col as u64 / tiles_x as u64) as u32;
-            let x1 = ((width as u64 * (col + 1) as u64 / tiles_x as u64) as u32)
-                .max(x0 + 1)
-                .min(width);
-            let y0 = (height as u64 * row as u64 / tiles_y as u64) as u32;
-            let y1 = ((height as u64 * (row + 1) as u64 / tiles_y as u64) as u32)
-                .max(y0 + 1)
-                .min(height);
-
-            let mut histogram = [0u32; 256];
-            for y in y0..y1 {
-                for x in x0..x1 {
-                    histogram[luma.get_pixel(x, y)[0] as usize] += 1;
-                }
-            }
-            let p_low = percentile_from_histogram(&histogram, trim);
-            let p_high = percentile_from_histogram(&histogram, 1.0 - trim).max(p_low + 1);
+fn build_region_stats(region_histograms: &[[u32; 256]], trim: f32) -> Vec<RegionStats> {
+    region_histograms
+        .iter()
+        .map(|histogram| {
+            let p_low = percentile_from_histogram(histogram, trim);
+            let p_high = percentile_from_histogram(histogram, 1.0 - trim).max(p_low + 1);
             RegionStats { p_low, p_high }
         })
         .collect()
@@ -176,39 +152,6 @@ fn bilinear_sample_range(
     (low, high)
 }
 
-fn compute_cell_means(luma: &image::GrayImage, columns: u32, rows: u32) -> Vec<f32> {
-    let (width, height) = luma.dimensions();
-    (0..(rows * columns))
-        .into_par_iter()
-        .map(|index| {
-            let col = index % columns;
-            let row = index / columns;
-            let x0 = (width as u64 * col as u64 / columns as u64) as u32;
-            let x1 = ((width as u64 * (col + 1) as u64 / columns as u64) as u32)
-                .max(x0 + 1)
-                .min(width);
-            let y0 = (height as u64 * row as u64 / rows as u64) as u32;
-            let y1 = ((height as u64 * (row + 1) as u64 / rows as u64) as u32)
-                .max(y0 + 1)
-                .min(height);
-
-            let mut sum: u64 = 0;
-            let mut count: u64 = 0;
-            for y in y0..y1 {
-                for x in x0..x1 {
-                    sum += luma.get_pixel(x, y)[0] as u64;
-                    count += 1;
-                }
-            }
-            if count > 0 {
-                sum as f32 / count as f32
-            } else {
-                0.0
-            }
-        })
-        .collect()
-}
-
 fn suppress_isolated_outliers(values: &mut [f32], columns: u32, rows: u32, threshold: f32) {
     let columns_i = columns as i32;
     let rows_i = rows as i32;
@@ -243,8 +186,8 @@ fn suppress_isolated_outliers(values: &mut [f32], columns: u32, rows: u32, thres
 }
 
 /// Общая формула яркости/контраста/инверсии для "исходных" и "целевых"
-/// параметров. Та же формула продублирована в CUDA-ядре
-/// (`compute::cuda::KERNEL_SOURCE`) — при изменении обновите и там.
+/// параметров. Та же формула продублирована в CUDA/WGSL/OpenCL-ядрах — при
+/// изменении логики здесь обновите и их.
 pub fn apply_brightness_contrast(value: f32, brightness: i32, contrast: i32, invert: bool) -> f32 {
     let mut adjusted =
         (value - 0.5) * (1.0 + contrast as f32 / 100.0) + 0.5 + brightness as f32 / 100.0;
@@ -273,12 +216,97 @@ pub fn normalize_and_adjust(mean: f32, low: f32, high: f32, params: &AsciiParams
     apply_brightness_contrast(value, params.brightness, params.contrast, params.invert)
 }
 
-pub fn normalize_cells_cpu(means: &[f32], lows: &[f32], highs: &[f32], params: &AsciiParams) -> Vec<f32> {
+pub fn normalize_cells_cpu(
+    means: &[f32],
+    lows: &[f32],
+    highs: &[f32],
+    params: &AsciiParams,
+) -> Vec<f32> {
     means
         .iter()
         .zip(lows.iter())
         .zip(highs.iter())
         .map(|((&mean, &low), &high)| normalize_and_adjust(mean, low, high, params))
+        .collect()
+}
+
+/// CPU-реализация тяжёлого прохода: гистограмма по каждому региону +
+/// среднее по каждой ASCII-клетке. Единственная реализация, которая
+/// гарантированно есть всегда (конец любой цепочки бэкендов в compute/mod.rs).
+pub fn scan_pixels_cpu(
+    luma: &image::GrayImage,
+    columns: u32,
+    rows: u32,
+    tiles_x: u32,
+    tiles_y: u32,
+) -> PixelScanResult {
+    PixelScanResult {
+        region_histograms: compute_region_histograms(luma, tiles_x, tiles_y),
+        cell_means: compute_cell_means(luma, columns, rows),
+    }
+}
+
+fn compute_region_histograms(
+    luma: &image::GrayImage,
+    tiles_x: u32,
+    tiles_y: u32,
+) -> Vec<[u32; 256]> {
+    let (width, height) = luma.dimensions();
+    (0..(tiles_y * tiles_x))
+        .into_par_iter()
+        .map(|index| {
+            let col = index % tiles_x;
+            let row = index / tiles_x;
+            let x0 = (width as u64 * col as u64 / tiles_x as u64) as u32;
+            let x1 = ((width as u64 * (col + 1) as u64 / tiles_x as u64) as u32)
+                .max(x0 + 1)
+                .min(width);
+            let y0 = (height as u64 * row as u64 / tiles_y as u64) as u32;
+            let y1 = ((height as u64 * (row + 1) as u64 / tiles_y as u64) as u32)
+                .max(y0 + 1)
+                .min(height);
+
+            let mut histogram = [0u32; 256];
+            for y in y0..y1 {
+                for x in x0..x1 {
+                    histogram[luma.get_pixel(x, y)[0] as usize] += 1;
+                }
+            }
+            histogram
+        })
+        .collect()
+}
+
+fn compute_cell_means(luma: &image::GrayImage, columns: u32, rows: u32) -> Vec<f32> {
+    let (width, height) = luma.dimensions();
+    (0..(rows * columns))
+        .into_par_iter()
+        .map(|index| {
+            let col = index % columns;
+            let row = index / columns;
+            let x0 = (width as u64 * col as u64 / columns as u64) as u32;
+            let x1 = ((width as u64 * (col + 1) as u64 / columns as u64) as u32)
+                .max(x0 + 1)
+                .min(width);
+            let y0 = (height as u64 * row as u64 / rows as u64) as u32;
+            let y1 = ((height as u64 * (row + 1) as u64 / rows as u64) as u32)
+                .max(y0 + 1)
+                .min(height);
+
+            let mut sum: u64 = 0;
+            let mut count: u64 = 0;
+            for y in y0..y1 {
+                for x in x0..x1 {
+                    sum += luma.get_pixel(x, y)[0] as u64;
+                    count += 1;
+                }
+            }
+            if count > 0 {
+                sum as f32 / count as f32
+            } else {
+                0.0
+            }
+        })
         .collect()
 }
 
@@ -294,8 +322,10 @@ pub fn render_adaptive(
     let region_trim = (params.adaptive_percentile / 100.0).clamp(0.005, 0.45);
     let global_trim = (region_trim / 2.0).clamp(0.005, 0.2);
 
-    let global = compute_global_stats(luma, global_trim);
-    let regions = compute_region_stats(luma, tiles_x, tiles_y, region_trim);
+    let scan = compute::scan_pixels(luma, columns, rows, tiles_x, tiles_y, params);
+
+    let global = build_global_stats(&scan.region_histograms, global_trim);
+    let regions = build_region_stats(&scan.region_histograms, region_trim);
     let region_ranges = smooth_region_ranges(
         &regions,
         tiles_x,
@@ -305,7 +335,7 @@ pub fn render_adaptive(
         params.adaptive_smoothing,
     );
 
-    let means = compute_cell_means(luma, columns, rows);
+    let means = scan.cell_means;
     let mut lows = Vec::with_capacity(means.len());
     let mut highs = Vec::with_capacity(means.len());
     for index in 0..means.len() as u32 {
