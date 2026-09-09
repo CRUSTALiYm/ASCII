@@ -4,19 +4,32 @@ use serde::Serialize;
 
 #[cfg(feature = "cuda")]
 pub mod cuda;
+pub mod directcompute;
 #[cfg(feature = "opencl")]
 pub mod opencl;
-pub mod directcompute;
+#[cfg(feature = "webgpu")]
+pub mod webgpu;
 
-/// Выбирает вычислитель по `params.compute_backend`. Недоступный бэкенд
-/// тихо откатывается на CPU.
-pub fn normalize_cells(means: &[f32], lows: &[f32], highs: &[f32], params: &AsciiParams) -> Vec<f32> {
+pub fn normalize_cells(
+    means: &[f32],
+    lows: &[f32],
+    highs: &[f32],
+    params: &AsciiParams,
+) -> Vec<f32> {
     #[cfg(feature = "cuda")]
     if params.compute_backend == "cuda" {
         if let Ok(values) = cuda::normalize_cells_cuda(means, lows, highs, params) {
             return values;
         }
     }
+
+    #[cfg(feature = "webgpu")]
+    if params.compute_backend == "cuda" || params.compute_backend == "webgpu" {
+        if let Ok(values) = webgpu::normalize_cells_webgpu(means, lows, highs, params) {
+            return values;
+        }
+    }
+
     normalize_cells_cpu(means, lows, highs, params)
 }
 
@@ -55,6 +68,26 @@ pub fn list_compute_backends() -> Vec<ComputeBackendInfo> {
     backends.push(ComputeBackendInfo {
         id: "cuda".into(),
         label: "NVIDIA CUDA (не собрано в этой сборке)".into(),
+        is_available: false,
+        executes_on_gpu: false,
+        is_default: false,
+    });
+
+    #[cfg(feature = "webgpu")]
+    {
+        let available = webgpu::is_available();
+        backends.push(ComputeBackendInfo {
+            id: "webgpu".into(),
+            label: "WebGPU (Vulkan/DX12/Metal — любой GPU)".into(),
+            is_available: available,
+            executes_on_gpu: available,
+            is_default: false,
+        });
+    }
+    #[cfg(not(feature = "webgpu"))]
+    backends.push(ComputeBackendInfo {
+        id: "webgpu".into(),
+        label: "WebGPU (не собрано в этой сборке)".into(),
         is_available: false,
         executes_on_gpu: false,
         is_default: false,

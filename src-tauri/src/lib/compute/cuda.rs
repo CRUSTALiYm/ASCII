@@ -1,54 +1,10 @@
 use crate::params::AsciiParams;
 use cudarc::driver::{CudaContext, LaunchConfig, PushKernelArg};
 
-// Та же формула, что и `adaptive::apply_brightness_contrast`/`normalize_and_adjust`
-// — при изменении логики на CPU обновите и это ядро.
-const KERNEL_SOURCE: &str = r#"
-extern "C" __global__ void normalize_cells(
-    const float* means,
-    const float* lows,
-    const float* highs,
-    float* out_values,
-    unsigned int count,
-    int source_brightness,
-    int source_contrast,
-    int source_invert,
-    int source_black_white,
-    int source_threshold,
-    int brightness,
-    int contrast,
-    int invert
-) {
-    unsigned int i = blockIdx.x * blockDim.x + threadIdx.x;
-    if (i >= count) return;
+const KERNEL_CU_SOURCE: &str = include_str!("kernels/normalize_cells.cu");
 
-    float low = lows[i];
-    float high = highs[i];
-    float range = high - low;
-    if (range < 1.0f) range = 1.0f;
+const PRECOMPILED_PTX: &str = include_str!(concat!(env!("OUT_DIR"), "/normalize_cells.ptx"));
 
-    float structural = (means[i] - low) / range;
-    structural = fminf(fmaxf(structural, 0.0f), 1.0f);
-
-    float value = (structural - 0.5f) * (1.0f + (float)source_contrast / 100.0f)
-        + 0.5f + (float)source_brightness / 100.0f;
-    value = fminf(fmaxf(value, 0.0f), 1.0f);
-    if (source_invert) value = 1.0f - value;
-    if (source_black_white && source_threshold > 0) {
-        value = (value * 100.0f < (float)source_threshold) ? 0.0f : 1.0f;
-    }
-
-    float final_value = (value - 0.5f) * (1.0f + (float)contrast / 100.0f)
-        + 0.5f + (float)brightness / 100.0f;
-    final_value = fminf(fmaxf(final_value, 0.0f), 1.0f);
-    if (invert) final_value = 1.0f - final_value;
-
-    out_values[i] = final_value;
-}
-"#;
-
-/// Реально пытается поднять контекст CUDA на устройстве 0. Не паникует,
-/// если драйвера/GPU нет — просто `false`.
 pub fn is_available() -> bool {
     CudaContext::new(0).is_ok()
 }
@@ -67,15 +23,26 @@ pub fn normalize_cells_cuda(
     let ctx = CudaContext::new(0).map_err(|error| error.to_string())?;
     let stream = ctx.default_stream();
 
-    let d_means = stream.clone_htod(means).map_err(|error| error.to_string())?;
+    let d_means = stream
+        .clone_htod(means)
+        .map_err(|error| error.to_string())?;
     let d_lows = stream.clone_htod(lows).map_err(|error| error.to_string())?;
-    let d_highs = stream.clone_htod(highs).map_err(|error| error.to_string())?;
+    let d_highs = stream
+        .clone_htod(highs)
+        .map_err(|error| error.to_string())?;
     let mut d_out = stream
         .alloc_zeros::<f32>(count)
         .map_err(|error| error.to_string())?;
 
-    let ptx = cudarc::nvrtc::compile_ptx(KERNEL_SOURCE).map_err(|error| error.to_string())?;
-    let module = ctx.load_module(ptx).map_err(|error| error.to_string())?;
+    let module = if PRECOMPILED_PTX.trim().is_empty() {
+        let ptx =
+            cudarc::nvrtc::compile_ptx(KERNEL_CU_SOURCE).map_err(|error| error.to_string())?;
+        ctx.load_module(ptx).map_err(|error| error.to_string())?
+    } else {
+        let ptx = cudarc::nvrtc::Ptx::from_src(PRECOMPILED_PTX);
+        ctx.load_module(ptx).map_err(|error| error.to_string())?
+    };
+
     let kernel = module
         .load_function("normalize_cells")
         .map_err(|error| error.to_string())?;

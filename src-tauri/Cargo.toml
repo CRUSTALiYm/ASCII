@@ -23,6 +23,7 @@ tauri-plugin-dialog = "2.7.3"
 rayon = "1.11"
 wgpu = { version = "30", optional = true, default-features = false, features = ["std", "parking_lot", "vulkan", "gles", "wgsl"] }
 pollster = { version = "0.4", optional = true }
+bytemuck = { version = "1", features = ["derive"], optional = true }
 nokhwa = { version = "0.10", default-features = false, features = ["input-native"], optional = true }
 xcap = { version = "0.6", optional = true }
 cudarc = { version = "0.19", optional = true }
@@ -39,5 +40,6 @@ camera = ["dep:nokhwa"]
 screen = ["dep:xcap"]
 cuda = ["dep:cudarc", "cudarc/cuda-version-from-build-system"]
 opencl = ["dep:opencl3"]
+webgpu = ["dep:wgpu", "dep:pollster", "dep:bytemuck"]
 
-full = ["gpu-backends", "camera", "screen", "cuda", "opencl"]
+full = ["gpu-backends", "camera", "screen", "cuda", "opencl", "webgpu"]
