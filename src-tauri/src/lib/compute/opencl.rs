@@ -48,9 +48,10 @@ pub fn scan_pixels_opencl(
     let pixel_count = (width * height) as usize;
 
     let (context, device) = first_gpu_context()?;
-    let queue =
+    let queue = unsafe {
         CommandQueue::create_with_properties(&context, device.id(), CL_QUEUE_PROFILING_ENABLE, 0)
-            .map_err(|error| error.to_string())?;
+    }
+    .map_err(|error| error.to_string())?;
 
     let mut luma_buf =
         unsafe { Buffer::<u8>::create(&context, CL_MEM_READ_ONLY, pixel_count, ptr::null_mut()) }
@@ -182,9 +183,10 @@ pub fn normalize_cells_opencl(
     }
 
     let (context, device) = first_gpu_context()?;
-    let queue =
+    let queue = unsafe {
         CommandQueue::create_with_properties(&context, device.id(), CL_QUEUE_PROFILING_ENABLE, 0)
-            .map_err(|error| error.to_string())?;
+    }
+    .map_err(|error| error.to_string())?;
 
     let mut means_buf =
         unsafe { Buffer::<f32>::create(&context, CL_MEM_READ_ONLY, count, ptr::null_mut()) }

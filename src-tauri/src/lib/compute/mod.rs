@@ -15,7 +15,6 @@ pub struct PixelScanResult {
     pub cell_means: Vec<f32>,               // rows * columns штук
 }
 
-/// "auto" — вся цепочка по приоритету.
 fn backend_order(requested: &str) -> &'static [&'static str] {
     match requested {
         "auto" => &["cuda", "webgpu", "opencl", "directcompute", "cpu"],
@@ -36,25 +35,25 @@ pub fn scan_pixels(
     params: &AsciiParams,
 ) -> PixelScanResult {
     for backend in backend_order(&params.compute_backend) {
-        let attempt: Option<PixelScanResult> = match *backend {
+        let attempt: Result<PixelScanResult, String> = match *backend {
             #[cfg(feature = "cuda")]
-            "cuda" => cuda::scan_pixels_cuda(luma, columns, rows, tiles_x, tiles_y).ok(),
+            "cuda" => cuda::scan_pixels_cuda(luma, columns, rows, tiles_x, tiles_y),
             #[cfg(feature = "webgpu")]
-            "webgpu" => webgpu::scan_pixels_webgpu(luma, columns, rows, tiles_x, tiles_y).ok(),
+            "webgpu" => webgpu::scan_pixels_webgpu(luma, columns, rows, tiles_x, tiles_y),
             #[cfg(feature = "opencl")]
-            "opencl" => opencl::scan_pixels_opencl(luma, columns, rows, tiles_x, tiles_y).ok(),
-            "cpu" => Some(adaptive::scan_pixels_cpu(
+            "opencl" => opencl::scan_pixels_opencl(luma, columns, rows, tiles_x, tiles_y),
+            "cpu" => Ok(adaptive::scan_pixels_cpu(
                 luma, columns, rows, tiles_x, tiles_y,
             )),
-            _ => None,
+            _ => Err("бэкенд не собран в этой сборке".to_string()),
         };
         match attempt {
-            Some(result) => {
+            Ok(result) => {
                 eprintln!("[compute] scan_pixels: выполнено на {backend}");
                 return result;
             }
-            None => {
-                eprintln!("[compute] scan_pixels: {backend} недоступен/не сработал, пробуем дальше")
+            Err(error) => {
+                eprintln!("[compute] scan_pixels: {backend} не сработал ({error}), пробуем дальше")
             }
         }
     }
@@ -68,24 +67,24 @@ pub fn normalize_cells(
     params: &AsciiParams,
 ) -> Vec<f32> {
     for backend in backend_order(&params.compute_backend) {
-        let attempt: Option<Vec<f32>> = match *backend {
+        let attempt: Result<Vec<f32>, String> = match *backend {
             #[cfg(feature = "cuda")]
-            "cuda" => cuda::normalize_cells_cuda(means, lows, highs, params).ok(),
+            "cuda" => cuda::normalize_cells_cuda(means, lows, highs, params),
             #[cfg(feature = "webgpu")]
-            "webgpu" => webgpu::normalize_cells_webgpu(means, lows, highs, params).ok(),
+            "webgpu" => webgpu::normalize_cells_webgpu(means, lows, highs, params),
             #[cfg(feature = "opencl")]
-            "opencl" => opencl::normalize_cells_opencl(means, lows, highs, params).ok(),
-            "cpu" => Some(adaptive::normalize_cells_cpu(means, lows, highs, params)),
-            _ => None,
+            "opencl" => opencl::normalize_cells_opencl(means, lows, highs, params),
+            "cpu" => Ok(adaptive::normalize_cells_cpu(means, lows, highs, params)),
+            _ => Err("бэкенд не собран в этой сборке".to_string()),
         };
         match attempt {
-            Some(result) => {
+            Ok(result) => {
                 eprintln!("[compute] normalize_cells: выполнено на {backend}");
                 return result;
             }
-            None => {
+            Err(error) => {
                 eprintln!(
-                    "[compute] normalize_cells: {backend} недоступен/не сработал, пробуем дальше"
+                    "[compute] normalize_cells: {backend} не сработал ({error}), пробуем дальше"
                 )
             }
         }
