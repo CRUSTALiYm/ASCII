@@ -60,7 +60,7 @@ fn default_despike_threshold() -> f32 {
     0.12
 }
 fn default_compute_backend() -> String {
-    "cpu".to_string()
+    "auto".to_string()
 }
 
 #[derive(Debug, Deserialize)]

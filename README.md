@@ -44,6 +44,8 @@
 
 ### Быстрый старт
 
+Добавить в PATH C:\Program Files (x86)\Microsoft Visual Studio\Installer
+
 ```bash
 # 1. Клонируйте репозиторий
 git clone https://github.com/CRUSTALiYm/ASCII.git

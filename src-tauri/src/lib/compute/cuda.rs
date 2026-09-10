@@ -6,6 +6,7 @@ const NORMALIZE_KERNEL_CU_SOURCE: &str = include_str!("kernels/normalize_cells.c
 const NORMALIZE_PRECOMPILED_PTX: &str =
     include_str!(concat!(env!("OUT_DIR"), "/normalize_cells.ptx"));
 const SCAN_KERNEL_SOURCE: &str = include_str!("kernels/scan_pixels.cu");
+const SCAN_PRECOMPILED_PTX: &str = include_str!(concat!(env!("OUT_DIR"), "/scan_pixels.ptx"));
 
 pub fn is_available() -> bool {
     CudaContext::new(0).is_ok()
@@ -43,7 +44,11 @@ pub fn scan_pixels_cuda(
         .alloc_zeros::<u32>(cell_count)
         .map_err(|error| error.to_string())?;
 
-    let ptx = cudarc::nvrtc::compile_ptx(SCAN_KERNEL_SOURCE).map_err(|error| error.to_string())?;
+    let ptx = if SCAN_PRECOMPILED_PTX.trim().is_empty() {
+        cudarc::nvrtc::compile_ptx(SCAN_KERNEL_SOURCE).map_err(|error| error.to_string())?
+    } else {
+        cudarc::nvrtc::Ptx::from_src(SCAN_PRECOMPILED_PTX)
+    };
     let module = ctx.load_module(ptx).map_err(|error| error.to_string())?;
     let histogram_kernel = module
         .load_function("region_histogram")
