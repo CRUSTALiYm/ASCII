@@ -1,0 +1,62 @@
+<div class="source-picker">
+  <p-selectbutton
+    [options]="sourceOptions"
+    optionLabel="label"
+    optionValue="value"
+    [ngModel]="sourceKind"
+    (ngModelChange)="onSourceKindChange($event)"
+  >
+    <ng-template #item let-item>
+      <i [class]="item.icon"></i>
+      <span>{{ item.label }}</span>
+    </ng-template>
+  </p-selectbutton>
+
+  @switch (sourceKind) {
+    @case ("file") {
+      <p-button
+        label="Открыть файл"
+        icon="pi pi-folder-open"
+        (click)="pickFile.emit()"
+      />
+    }
+
+    @case ("camera") {
+      <div class="source-picker__stream-controls">
+        <p-select
+          [options]="camera.devices()"
+          optionLabel="name"
+          optionValue="index"
+          placeholder="Выберите камеру"
+          [ngModel]="camera.selectedIndex()"
+          (ngModelChange)="onCameraDeviceChange($event)"
+        />
+        <p-button
+          [label]="camera.isStreaming() ? 'Остановить' : 'Включить'"
+          [icon]="camera.isStreaming() ? 'pi pi-stop' : 'pi pi-play'"
+          [disabled]="camera.selectedIndex() === null"
+          (click)="camera.isStreaming() ? camera.stop() : startCamera.emit()"
+        />
+      </div>
+    }
+
+    @case ("screen") {
+      <div class="source-picker__stream-controls">
+        <p-select
+          [options]="screen.sources()"
+          optionLabel="label"
+          optionValue="id"
+          placeholder="Выберите источник"
+          [ngModel]="screen.selectedId()"
+          (ngModelChange)="onScreenSourceChange($event)"
+        />
+        <p-button
+          [label]="screen.isStreaming() ? 'Остановить' : 'Включить'"
+          [icon]="screen.isStreaming() ? 'pi pi-stop' : 'pi pi-play'"
+          [disabled]="screen.selectedId() === null"
+          (click)="screen.isStreaming() ? screen.stop() : startScreen.emit()"
+        />
+      </div>
+    }
+  }
+</div>
