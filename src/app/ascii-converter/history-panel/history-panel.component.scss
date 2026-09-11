@@ -1,0 +1,111 @@
+@use "../design-tokens" as tokens;
+
+.history-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  font-family: tokens.$font-ui;
+
+  &__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+
+    h4 {
+      margin: 0;
+      color: tokens.$color-text-secondary;
+      font-size: 0.6rem;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+    }
+  }
+
+  &__clear {
+    padding: 0;
+    color: tokens.$color-text-muted;
+    background: transparent;
+    border: 0;
+    cursor: pointer;
+    font-family: inherit;
+    font-size: 0.58rem;
+
+    &:hover {
+      color: tokens.$color-text-primary;
+    }
+  }
+
+  &__empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    padding: 20px 0;
+    color: tokens.$color-text-faint;
+    font-size: 0.62rem;
+
+    i {
+      font-size: 1.1rem;
+    }
+  }
+
+  &__list {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  &__item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    padding: 8px 10px;
+    background: tokens.$color-bg-surface;
+    border: 1px solid tokens.$color-border;
+    border-radius: tokens.$radius-sm;
+    cursor: pointer;
+
+    &:hover {
+      border-color: tokens.$color-accent-border;
+    }
+  }
+
+  &__item-info {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+  }
+
+  &__item-name {
+    overflow: hidden;
+    color: tokens.$color-text-primary;
+    font-size: 0.62rem;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  &__item-date {
+    color: tokens.$color-text-faint;
+    font-size: 0.54rem;
+  }
+
+  &__item-remove {
+    display: grid;
+    flex-shrink: 0;
+    place-items: center;
+    padding: 4px;
+    color: tokens.$color-text-faint;
+    background: transparent;
+    border: 0;
+    cursor: pointer;
+
+    &:hover {
+      color: #f07373;
+    }
+  }
+}

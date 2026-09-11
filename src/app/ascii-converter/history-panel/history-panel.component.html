@@ -1,0 +1,35 @@
+<div class="history-panel">
+  <div class="history-panel__header">
+    <h4>История</h4>
+    @if (history.history().length) {
+      <button type="button" class="history-panel__clear" (click)="onClear()">
+        Очистить
+      </button>
+    }
+  </div>
+
+  @if (!history.history().length) {
+    <div class="history-panel__empty">
+      <i class="pi pi-history"></i>
+      <span>Пока пусто</span>
+    </div>
+  } @else {
+    <ul class="history-panel__list">
+      @for (item of history.history(); track item.id) {
+        <li class="history-panel__item" (click)="onRestore(item.id)">
+          <div class="history-panel__item-info">
+            <span class="history-panel__item-name">{{ item.name }}</span>
+            <span class="history-panel__item-date">{{ item.createdAt | date: "short" }}</span>
+          </div>
+          <button
+            type="button"
+            class="history-panel__item-remove"
+            (click)="onRemove(item.id, $event)"
+          >
+            <i class="pi pi-trash"></i>
+          </button>
+        </li>
+      }
+    </ul>
+  }
+</div>

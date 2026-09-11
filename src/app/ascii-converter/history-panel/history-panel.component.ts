@@ -1,11 +1,12 @@
 import { Component, EventEmitter, Output, inject } from "@angular/core";
+import { DatePipe } from "@angular/common";
 import { ButtonModule } from "primeng/button";
 
 import { HistoryService } from "../../core/services/history.service";
 
 @Component({
   selector: "app-history-panel",
-  imports: [ButtonModule],
+  imports: [DatePipe, ButtonModule],
   templateUrl: "./history-panel.component.html",
   styleUrl: "./history-panel.component.scss",
 })

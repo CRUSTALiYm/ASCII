@@ -1,4 +1,6 @@
 import { Component, DestroyRef, effect, inject, signal } from "@angular/core";
+import { ButtonModule } from "primeng/button";
+import { TabsModule } from "primeng/tabs";
 
 import { SourcePickerComponent } from "./source-picker/source-picker.component";
 import { PreviewPanelComponent } from "./preview-panel/preview-panel.component";
@@ -23,6 +25,8 @@ const AUTO_CONVERT_DEBOUNCE_MS = 150;
 @Component({
   selector: "app-ascii-converter",
   imports: [
+    ButtonModule,
+    TabsModule,
     SourcePickerComponent,
     PreviewPanelComponent,
     BasicSettingsComponent,

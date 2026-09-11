@@ -1,4 +1,4 @@
-import { Injectable, inject, signal } from "@angular/core";
+import { Injectable, computed, inject, signal } from "@angular/core";
 
 import { TauriBridgeService } from "./tauri-bridge.service";
 import { ConversionService } from "./conversion.service";
@@ -21,6 +21,13 @@ export class ScreenService {
 
   private readonly _lastFrameBase64 = signal<string | null>(null);
   readonly lastFrameBase64 = this._lastFrameBase64.asReadonly();
+
+  /** `captureScreenFrame` всегда кодирует PNG (encode_rgba_as_base64_png в
+   * screen.rs) — префикс можно приклеить сразу, без угадывания MIME. */
+  readonly lastFrameDataUrl = computed(() => {
+    const base64 = this._lastFrameBase64();
+    return base64 ? `data:image/png;base64,${base64}` : null;
+  });
 
   private loopHandle: ReturnType<typeof setTimeout> | null = null;
   private streamToken = 0;
