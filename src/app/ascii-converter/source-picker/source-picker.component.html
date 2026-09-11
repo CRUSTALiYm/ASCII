@@ -1,22 +1,24 @@
 <div class="source-picker">
-  <p-selectbutton
-    [options]="sourceOptions"
-    optionLabel="label"
-    optionValue="value"
-    [ngModel]="sourceKind"
-    (ngModelChange)="onSourceKindChange($event)"
-  >
-    <ng-template #item let-item>
-      <i [class]="item.icon"></i>
-      <span>{{ item.label }}</span>
-    </ng-template>
-  </p-selectbutton>
+  <div class="source-picker__switcher">
+    @for (option of sourceOptions; track option.value) {
+      <button
+        type="button"
+        class="source-picker__switch-button"
+        [class.source-picker__switch-button--active]="sourceKind === option.value"
+        (click)="onSourceKindChange(option.value)"
+      >
+        <i [class]="option.icon"></i>
+        <span>{{ option.label }}</span>
+      </button>
+    }
+  </div>
 
   @switch (sourceKind) {
     @case ("file") {
       <p-button
         label="Открыть файл"
         icon="pi pi-folder-open"
+        styleClass="w-full"
         (click)="pickFile.emit()"
       />
     }

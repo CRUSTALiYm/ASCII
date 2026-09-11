@@ -2,6 +2,7 @@ import { Injectable, effect, inject, signal } from "@angular/core";
 
 import { TauriBridgeService } from "./tauri-bridge.service";
 import { SettingsService } from "./settings.service";
+import { AppearanceService } from "./appearance.service";
 import {
   AppState,
   CURRENT_SETTINGS_VERSION,
@@ -18,6 +19,7 @@ const SAVE_DEBOUNCE_MS = 800;
 export class HistoryService {
   private readonly bridge = inject(TauriBridgeService);
   private readonly settings = inject(SettingsService);
+  private readonly appearance = inject(AppearanceService);
 
   private readonly _history = signal<HistoryItem[]>([]);
   readonly history = this._history.asReadonly();
@@ -31,6 +33,8 @@ export class HistoryService {
     effect(() => {
       this.settings.params();
       this.settings.presets();
+      this.appearance.tone();
+      this.appearance.panelPosition();
       if (this._ready()) this.scheduleSave();
     });
   }
@@ -60,6 +64,8 @@ export class HistoryService {
       state.customCharacterNames ?? {},
     );
     this.settings.restoreLastSettings(state.lastSettings);
+    this.appearance.restoreTone(state.lastTone);
+    this.appearance.restorePanelPosition(state.lastPanelPosition);
     this._ready.set(true);
   }
 
@@ -107,6 +113,8 @@ export class HistoryService {
       ),
       settingsVersion: CURRENT_SETTINGS_VERSION,
       lastSettings: this.settings.params(),
+      lastTone: this.appearance.tone(),
+      lastPanelPosition: this.appearance.panelPosition(),
     };
     await this.bridge.saveAppState(state);
   }

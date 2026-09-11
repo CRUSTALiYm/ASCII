@@ -1,7 +1,6 @@
 import { Component, EventEmitter, Input, Output, inject } from "@angular/core";
 import { FormsModule } from "@angular/forms";
 import { ButtonModule } from "primeng/button";
-import { SelectButtonModule } from "primeng/selectbutton";
 import { SelectModule } from "primeng/select";
 
 import { CameraService } from "../../core/services/camera.service";
@@ -16,7 +15,7 @@ interface SourceOption {
 
 @Component({
   selector: "app-source-picker",
-  imports: [FormsModule, ButtonModule, SelectButtonModule, SelectModule],
+  imports: [FormsModule, ButtonModule, SelectModule],
   templateUrl: "./source-picker.component.html",
   styleUrl: "./source-picker.component.scss",
 })

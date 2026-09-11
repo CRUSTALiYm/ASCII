@@ -18,6 +18,7 @@ import { HistoryService } from "../core/services/history.service";
 import { BackendsService } from "../core/services/backends.service";
 import { AppearanceService } from "../core/services/appearance.service";
 import { ExportService } from "../core/services/export.service";
+import { NotificationsService } from "../core/services/notifications.service";
 import { VideoSourceKind } from "../core/models/capture-source.model";
 
 const AUTO_CONVERT_DEBOUNCE_MS = 150;
@@ -49,6 +50,7 @@ export class AsciiConverterComponent {
   readonly history = inject(HistoryService);
   readonly backends = inject(BackendsService);
   readonly appearance = inject(AppearanceService);
+  readonly notifications = inject(NotificationsService);
 
   readonly sourceKind = signal<VideoSourceKind>("file");
 
@@ -67,6 +69,13 @@ export class AsciiConverterComponent {
       const path = this.fileSource.path();
       if (this.sourceKind() !== "file" || !path) return;
       this.scheduleAutoConvert(path);
+    });
+
+    // Ошибки конвертации раньше просто оседали в conversion.error() и
+    // никак не показывались — теперь всплывают тостом.
+    effect(() => {
+      const error = this.conversion.error();
+      if (error) this.notifications.error(`Ошибка конвертации: ${error}`);
     });
 
     this.destroyRef.onDestroy(() => {
@@ -96,7 +105,11 @@ export class AsciiConverterComponent {
   }
 
   async openDroppedFile(path: string): Promise<void> {
-    await this.fileSource.loadFile(path);
+    try {
+      await this.fileSource.loadFile(path);
+    } catch {
+      return; // ошибка уже показана тостом внутри file-source.service
+    }
     await this.afterFileLoaded(path);
   }
 

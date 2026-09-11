@@ -18,6 +18,8 @@ export interface AppState {
   lastSettings?: Partial<AsciiParamsInput>;
   /** Appearance (цвет текста превью) — тоже восстанавливается при старте. */
   lastTone?: string;
+  /** Сторона панели настроек ("left" | "right") — тоже appearance. */
+  lastPanelPosition?: "left" | "right";
 }
 
 export function defaultAppState(): AppState {

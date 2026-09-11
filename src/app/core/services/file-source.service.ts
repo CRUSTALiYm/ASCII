@@ -4,6 +4,7 @@ import { getCurrentWindow } from "@tauri-apps/api/window";
 import type { UnlistenFn } from "@tauri-apps/api/event";
 
 import { TauriBridgeService } from "./tauri-bridge.service";
+import { NotificationsService } from "./notifications.service";
 import { BestSettings } from "../models/convert-result.model";
 
 const IMAGE_EXTENSIONS = ["png", "jpg", "jpeg", "webp", "bmp", "gif"];
@@ -28,6 +29,7 @@ function mimeFor(path: string): string {
 @Injectable({ providedIn: "root" })
 export class FileSourceService {
   private readonly bridge = inject(TauriBridgeService);
+  private readonly notifications = inject(NotificationsService);
 
   private readonly _path = signal<string | null>(null);
   readonly path = this._path.asReadonly();
@@ -40,20 +42,35 @@ export class FileSourceService {
   private settingsJobId = 0;
   private dragUnlisten: UnlistenFn | null = null;
 
+  /** Раньше сбой здесь выглядел как "нажал — ничего не произошло": любая
+   * ошибка (диалог, чтение файла) тонула в try/catch. Теперь она видима
+   * через notifications.service и попадает в консоль для отладки. */
   async pickFile(): Promise<string | null> {
-    const selected = await open({
-      multiple: false,
-      filters: [{ name: "Изображения", extensions: IMAGE_EXTENSIONS }],
-    });
-    if (!selected || Array.isArray(selected)) return null;
-    await this.loadFile(selected);
-    return selected;
+    try {
+      const selected = await open({
+        multiple: false,
+        filters: [{ name: "Изображения", extensions: IMAGE_EXTENSIONS }],
+      });
+      if (!selected || Array.isArray(selected)) return null;
+      await this.loadFile(selected);
+      return selected;
+    } catch (error) {
+      console.error("[file-source] pickFile failed", error);
+      this.notifications.error(`Не удалось открыть файл: ${String(error)}`);
+      return null;
+    }
   }
 
   async loadFile(path: string): Promise<void> {
-    this._path.set(path);
-    const base64 = await this.bridge.readImageAsBase64(path);
-    this._originalDataUrl.set(`data:${mimeFor(path)};base64,${base64}`);
+    try {
+      const base64 = await this.bridge.readImageAsBase64(path);
+      this._path.set(path);
+      this._originalDataUrl.set(`data:${mimeFor(path)};base64,${base64}`);
+    } catch (error) {
+      console.error("[file-source] loadFile failed", error);
+      this.notifications.error(`Не удалось прочитать файл: ${String(error)}`);
+      throw error;
+    }
   }
 
   async findBestSettings(path: string): Promise<BestSettings | null> {
@@ -62,7 +79,8 @@ export class FileSourceService {
     try {
       const result = await this.bridge.findBestSettings(path, jobId);
       return jobId === this.settingsJobId ? result : null;
-    } catch {
+    } catch (error) {
+      console.error("[file-source] findBestSettings failed", error);
       return null;
     }
   }
