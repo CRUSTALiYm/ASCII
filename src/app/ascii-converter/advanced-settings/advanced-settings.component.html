@@ -1,0 +1,206 @@
+<div class="advanced-settings">
+  <section class="advanced-settings__section">
+    <h4>Целевые правки</h4>
+
+    <div class="advanced-settings__field">
+      <div class="advanced-settings__field-label">
+        <span>Яркость</span>
+        <span>{{ settings.params().brightness }}</span>
+      </div>
+      <p-slider
+        [ngModel]="settings.params().brightness"
+        (ngModelChange)="setNumber('brightness', $event)"
+        [min]="-100"
+        [max]="100"
+      />
+    </div>
+
+    <div class="advanced-settings__field">
+      <div class="advanced-settings__field-label">
+        <span>Контраст</span>
+        <span>{{ settings.params().contrast }}</span>
+      </div>
+      <p-slider
+        [ngModel]="settings.params().contrast"
+        (ngModelChange)="setNumber('contrast', $event)"
+        [min]="-100"
+        [max]="100"
+      />
+    </div>
+
+    <div class="advanced-settings__toggle">
+      <span>Инверсия</span>
+      <p-togglebutton
+        [ngModel]="settings.params().invert"
+        (ngModelChange)="setBoolean('invert', $event)"
+        onLabel="Вкл"
+        offLabel="Выкл"
+      />
+    </div>
+  </section>
+
+  <section class="advanced-settings__section">
+    <h4>Исходные правки</h4>
+
+    <div class="advanced-settings__field">
+      <div class="advanced-settings__field-label">
+        <span>Яркость источника</span>
+        <span>{{ settings.params().sourceBrightness }}</span>
+      </div>
+      <p-slider
+        [ngModel]="settings.params().sourceBrightness"
+        (ngModelChange)="setNumber('sourceBrightness', $event)"
+        [min]="-100"
+        [max]="100"
+      />
+    </div>
+
+    <div class="advanced-settings__field">
+      <div class="advanced-settings__field-label">
+        <span>Контраст источника</span>
+        <span>{{ settings.params().sourceContrast }}</span>
+      </div>
+      <p-slider
+        [ngModel]="settings.params().sourceContrast"
+        (ngModelChange)="setNumber('sourceContrast', $event)"
+        [min]="-100"
+        [max]="100"
+      />
+    </div>
+
+    <div class="advanced-settings__toggle">
+      <span>Инверсия источника</span>
+      <p-togglebutton
+        [ngModel]="settings.params().sourceInvert"
+        (ngModelChange)="setBoolean('sourceInvert', $event)"
+        onLabel="Вкл"
+        offLabel="Выкл"
+      />
+    </div>
+
+    <div class="advanced-settings__toggle">
+      <span>Чёрно-белый порог</span>
+      <p-togglebutton
+        [ngModel]="settings.params().sourceBlackWhite"
+        (ngModelChange)="setBoolean('sourceBlackWhite', $event)"
+        onLabel="Вкл"
+        offLabel="Выкл"
+      />
+    </div>
+
+    @if (settings.params().sourceBlackWhite) {
+      <div class="advanced-settings__field">
+        <div class="advanced-settings__field-label">
+          <span>Порог</span>
+          <span>{{ settings.params().sourceThreshold }}</span>
+        </div>
+        <p-slider
+          [ngModel]="settings.params().sourceThreshold"
+          (ngModelChange)="setNumber('sourceThreshold', $event)"
+          [min]="0"
+          [max]="100"
+        />
+      </div>
+    }
+  </section>
+
+  <section class="advanced-settings__section">
+    <h4>Адаптивный анализ яркости</h4>
+
+    <div class="advanced-settings__field">
+      <div class="advanced-settings__field-label">
+        <span>Размер региональной сетки</span>
+        <span>{{ settings.params().adaptiveRegionTiles }}</span>
+      </div>
+      <p-inputnumber
+        [ngModel]="settings.params().adaptiveRegionTiles"
+        (ngModelChange)="setNumber('adaptiveRegionTiles', $event)"
+        [min]="2"
+        [max]="32"
+        [showButtons]="true"
+      />
+    </div>
+
+    <div class="advanced-settings__field">
+      <div class="advanced-settings__field-label">
+        <span>Обрезка перцентиля, %</span>
+        <span>{{ settings.params().adaptivePercentile }}</span>
+      </div>
+      <p-slider
+        [ngModel]="settings.params().adaptivePercentile"
+        (ngModelChange)="setNumber('adaptivePercentile', $event)"
+        [min]="0.5"
+        [max]="45"
+        [step]="0.5"
+      />
+    </div>
+
+    <div class="advanced-settings__field">
+      <div class="advanced-settings__field-label">
+        <span>Сглаживание по соседям</span>
+        <span>{{ settings.params().adaptiveSmoothing }}</span>
+      </div>
+      <p-slider
+        [ngModel]="settings.params().adaptiveSmoothing"
+        (ngModelChange)="setNumber('adaptiveSmoothing', $event)"
+        [min]="0"
+        [max]="1"
+        [step]="0.05"
+      />
+    </div>
+
+    <div class="advanced-settings__field">
+      <div class="advanced-settings__field-label">
+        <span>Минимальный диапазон</span>
+        <span>{{ settings.params().adaptiveMinRange }}</span>
+      </div>
+      <p-slider
+        [ngModel]="settings.params().adaptiveMinRange"
+        (ngModelChange)="setNumber('adaptiveMinRange', $event)"
+        [min]="0"
+        [max]="255"
+      />
+    </div>
+
+    <div class="advanced-settings__field">
+      <div class="advanced-settings__field-label">
+        <span>Порог подавления выбросов</span>
+        <span>{{ settings.params().adaptiveDespikeThreshold }}</span>
+      </div>
+      <p-slider
+        [ngModel]="settings.params().adaptiveDespikeThreshold"
+        (ngModelChange)="setNumber('adaptiveDespikeThreshold', $event)"
+        [min]="0"
+        [max]="1"
+        [step]="0.02"
+      />
+    </div>
+  </section>
+
+  <section class="advanced-settings__section">
+    <h4>Вычислительный бэкенд</h4>
+
+    <p-select
+      [options]="computeBackendOptions"
+      optionLabel="label"
+      optionValue="value"
+      [ngModel]="settings.params().computeBackend"
+      (ngModelChange)="onComputeBackendChange($event)"
+    >
+      <ng-template #item let-option>
+        <div class="advanced-settings__backend-option">
+          <span>{{ option.label }}</span>
+          @if (option.value !== "auto") {
+            @if (backendExecutesOnGpu(option.value)) {
+              <p-tag severity="success" value="GPU" />
+            } @else if (isBackendReady(option.value)) {
+              <p-tag severity="info" value="только детект" />
+            } @else {
+              <p-tag severity="secondary" value="недоступен" />
+            }
+          }
+        </div>
+      </ng-template>
+    </p-select>
+  </section>
+</div>

@@ -1,0 +1,65 @@
+@use "../design-tokens" as tokens;
+
+.advanced-settings {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  font-family: tokens.$font-ui;
+
+  &__section {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+
+    h4 {
+      margin: 0;
+      color: tokens.$color-text-secondary;
+      font-size: 0.6rem;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+    }
+  }
+
+  &__field {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+
+    p-slider,
+    p-inputnumber {
+      width: 100%;
+    }
+  }
+
+  &__field-label {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    color: tokens.$color-text-primary;
+    font-size: 0.62rem;
+    font-weight: 600;
+
+    span:last-child {
+      color: tokens.$color-text-muted;
+      font-weight: 400;
+      font-family: tokens.$font-mono;
+    }
+  }
+
+  &__toggle {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    color: tokens.$color-text-primary;
+    font-size: 0.63rem;
+  }
+
+  &__backend-option {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    width: 100%;
+  }
+}

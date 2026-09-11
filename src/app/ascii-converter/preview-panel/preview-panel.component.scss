@@ -1,0 +1,99 @@
+@use "../design-tokens" as tokens;
+
+.preview-panel {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  height: 100%;
+
+  &__stage {
+    position: relative;
+    flex: 1;
+    min-height: 0;
+    overflow: hidden;
+    background: tokens.$color-bg-panel;
+    border-radius: tokens.$radius-lg;
+  }
+
+  &__original,
+  &__canvas {
+    position: absolute;
+    display: block;
+  }
+
+  &__canvas {
+    image-rendering: pixelated;
+  }
+
+  &__stage--overlay &__canvas {
+    mix-blend-mode: screen;
+  }
+
+  &__split-line {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    z-index: 3;
+    width: 2px;
+    margin-left: -1px;
+    background: tokens.$color-accent;
+    box-shadow: 0 0 0 1px rgba(200, 255, 61, 0.15);
+    cursor: ew-resize;
+    touch-action: none;
+  }
+
+  &__empty {
+    position: absolute;
+    inset: 0;
+    display: grid;
+    place-items: center;
+    gap: 0.4rem;
+    color: tokens.$color-text-muted;
+    font-family: tokens.$font-ui;
+    font-size: 0.75rem;
+
+    i {
+      font-size: 1.4rem;
+      color: tokens.$color-text-faint;
+    }
+  }
+
+  &__toolbar {
+    display: flex;
+    justify-content: center;
+    padding-top: 14px;
+  }
+
+  &__mode-switcher {
+    display: flex;
+    gap: 3px;
+    padding: 3px;
+    background: tokens.$color-bg-input;
+    border-radius: tokens.$radius-md;
+  }
+
+  &__mode-button {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 7px 9px;
+    color: tokens.$color-text-secondary;
+    background: transparent;
+    border: 0;
+    border-radius: 6px;
+    cursor: pointer;
+    font-family: inherit;
+    font-size: 0.6rem;
+
+    i {
+      font-size: 0.65rem;
+    }
+
+    &--active {
+      color: tokens.$color-accent-text-on;
+      background: tokens.$color-accent;
+      font-weight: 700;
+    }
+  }
+}

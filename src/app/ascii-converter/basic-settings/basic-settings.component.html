@@ -1,0 +1,68 @@
+<div class="basic-settings">
+  <div class="basic-settings__field">
+    <label for="columns">Ширина (символов)</label>
+    <p-inputnumber
+      inputId="columns"
+      [ngModel]="settings.params().columns"
+      (ngModelChange)="onColumnsChange($event)"
+      [min]="8"
+      [max]="2000"
+      [showButtons]="true"
+    />
+  </div>
+
+  <div class="basic-settings__field">
+    <label for="preset">Набор символов</label>
+    <p-select
+      inputId="preset"
+      [options]="settings.presets()"
+      optionLabel="label"
+      optionValue="value"
+      [ngModel]="settings.params().characters"
+      (ngModelChange)="onCharactersChange($event)"
+    >
+      <ng-template #item let-preset>
+        <div class="basic-settings__preset-option">
+          <div>
+            <strong>{{ preset.label }}</strong>
+            <small>{{ preset.description }}</small>
+          </div>
+          @if (preset.custom) {
+            <button
+              type="button"
+              class="basic-settings__preset-remove"
+              (click)="removeCustomPreset(preset); $event.stopPropagation()"
+            >
+              <i class="pi pi-times"></i>
+            </button>
+          }
+        </div>
+      </ng-template>
+    </p-select>
+    <span class="basic-settings__character-preview">{{ settings.params().characters }}</span>
+  </div>
+
+  <div class="basic-settings__custom-add">
+    <input
+      #customInput
+      type="text"
+      class="basic-settings__custom-input"
+      placeholder="Свой набор символов (от тёмного к светлому)"
+      [value]="settings.params().characters"
+    />
+    <p-button icon="pi pi-plus" [text]="true" (click)="addCustomPreset(customInput.value)" />
+  </div>
+
+  <div class="basic-settings__toggle">
+    <div>
+      <strong>Адаптивная яркость</strong>
+      <small>Учитывает локальную структуру изображения, а не только глобальный диапазон</small>
+    </div>
+    <p-togglebutton
+      [ngModel]="settings.params().adaptive"
+      (ngModelChange)="onAdaptiveToggle($event)"
+      onLabel="Вкл"
+      offLabel="Выкл"
+    />
+  </div>
+</div>

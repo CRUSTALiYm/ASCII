@@ -1,0 +1,93 @@
+<div class="preview-panel">
+  <div
+    #stage
+    class="preview-panel__stage"
+    [class.preview-panel__stage--overlay]="mode() === 'overlay'"
+    [class.preview-panel__stage--slider]="mode() === 'slider'"
+  >
+    @if (originalSrc(); as src) {
+      <img
+        #originalImage
+        class="preview-panel__original"
+        [src]="src"
+        (load)="onOriginalImageLoad(originalImage)"
+        [style.display]="mode() === 'result' ? 'none' : 'block'"
+        [style.left.px]="activeOriginalRect().x"
+        [style.top.px]="activeOriginalRect().y"
+        [style.width.px]="activeOriginalRect().width"
+        [style.height.px]="activeOriginalRect().height"
+        [style.opacity]="mode() === 'overlay' ? 0.35 : 1"
+        [style.clipPath]="originalClipPath()"
+        alt="Оригинал"
+      />
+    }
+
+    <canvas
+      #canvas
+      class="preview-panel__canvas"
+      [style.display]="mode() === 'original' ? 'none' : 'block'"
+      [style.left.px]="resultRect().x"
+      [style.top.px]="resultRect().y"
+      [style.width.px]="resultRect().width"
+      [style.height.px]="resultRect().height"
+      [style.clipPath]="resultClipPath()"
+    ></canvas>
+
+    @if (mode() === "slider") {
+      <div
+        class="preview-panel__split-line"
+        [style.left.px]="resultRect().x + resultRect().width * sliderPosition()"
+        (pointerdown)="onSliderPointerDown($event)"
+        (pointermove)="onSliderPointerMove($event)"
+      ></div>
+    }
+
+    @if (!result() && !originalSrc()) {
+      <div class="preview-panel__empty">
+        <i class="pi pi-image"></i>
+        <span>Нет изображения</span>
+      </div>
+    }
+  </div>
+
+  <div class="preview-panel__toolbar">
+    <div class="preview-panel__mode-switcher">
+      <button
+        type="button"
+        class="preview-panel__mode-button"
+        [class.preview-panel__mode-button--active]="mode() === 'result'"
+        (click)="setMode('result')"
+      >
+        <i class="pi pi-th-large"></i>
+        <span>Результат</span>
+      </button>
+      <button
+        type="button"
+        class="preview-panel__mode-button"
+        [class.preview-panel__mode-button--active]="mode() === 'original'"
+        (click)="setMode('original')"
+      >
+        <i class="pi pi-image"></i>
+        <span>Оригинал</span>
+      </button>
+      <button
+        type="button"
+        class="preview-panel__mode-button"
+        [class.preview-panel__mode-button--active]="mode() === 'overlay'"
+        (click)="setMode('overlay')"
+      >
+        <i class="pi pi-clone"></i>
+        <span>Наложение</span>
+      </button>
+      <button
+        type="button"
+        class="preview-panel__mode-button"
+        [class.preview-panel__mode-button--active]="mode() === 'slider'"
+        (click)="setMode('slider')"
+      >
+        <i class="pi pi-arrows-h"></i>
+        <span>Сравнение</span>
+      </button>
+    </div>
+  </div>
+</div>

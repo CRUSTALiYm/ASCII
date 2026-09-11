@@ -1,3 +1,5 @@
+@use "../design-tokens" as tokens;
+
 .source-picker {
   display: flex;
   flex-direction: column;
@@ -12,4 +14,17 @@
       flex: 1;
     }
   }
+}
+
+::ng-deep .source-picker .p-togglebutton {
+  gap: 0.35rem;
+  color: tokens.$color-text-secondary;
+  font-family: tokens.$font-ui;
+  font-size: 0.6rem;
+}
+
+::ng-deep .source-picker .p-togglebutton.p-togglebutton-checked {
+  color: tokens.$color-accent-text-on;
+  background: tokens.$color-accent;
+  font-weight: 700;
 }
