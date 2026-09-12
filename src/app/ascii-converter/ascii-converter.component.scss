@@ -76,6 +76,48 @@
   min-height: 0;
 }
 
+.ascii-converter__toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.ascii-converter__background-picker {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: tokens.$color-text-muted;
+  font-family: tokens.$font-ui;
+  font-size: 0.6rem;
+}
+
+.ascii-converter__background-swatch {
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  background: tokens.$color-bg-input;
+  border: 1px solid tokens.$color-border;
+  border-radius: tokens.$radius-sm;
+  cursor: pointer;
+
+  &--active {
+    border-color: tokens.$color-accent;
+  }
+
+  &--color {
+    padding: 2px;
+  }
+
+  i {
+    color: tokens.$color-text-muted;
+    font-size: 0.6rem;
+  }
+}
+
 .ascii-converter__actions {
   display: flex;
   flex-wrap: wrap;

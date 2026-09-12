@@ -2,6 +2,7 @@ import { Injectable, computed, inject, signal } from "@angular/core";
 
 import { TauriBridgeService } from "./tauri-bridge.service";
 import { ConversionService } from "./conversion.service";
+import { NotificationsService } from "./notifications.service";
 import { CameraDeviceInfo } from "../models/capture-source.model";
 import { AsciiParamsInput } from "../models/ascii-params.model";
 
@@ -9,6 +10,7 @@ import { AsciiParamsInput } from "../models/ascii-params.model";
 export class CameraService {
   private readonly bridge = inject(TauriBridgeService);
   private readonly conversion = inject(ConversionService);
+  private readonly notifications = inject(NotificationsService);
 
   private readonly _devices = signal<CameraDeviceInfo[]>([]);
   readonly devices = this._devices.asReadonly();
@@ -50,6 +52,7 @@ export class CameraService {
     this.stop();
     this._isStreaming.set(true);
     const token = ++this.streamToken;
+    let reportedError = false;
 
     const tick = async (): Promise<void> => {
       if (token !== this.streamToken) return;
@@ -58,8 +61,12 @@ export class CameraService {
         if (token !== this.streamToken) return;
         this._lastFrameBase64.set(frame);
         await this.conversion.convertFrame(frame, getParams());
-      } catch {
-        // Кадр не удалось захватить — пробуем на следующем тике, поток не роняем.
+      } catch (error) {
+        console.error("[camera] captureCameraFrame failed", error);
+        if (!reportedError) {
+          reportedError = true;
+          this.notifications.error(`Камера не отдаёт кадры: ${String(error)}`);
+        }
       }
       if (token === this.streamToken) {
         this.loopHandle = setTimeout(() => void tick(), intervalMs);

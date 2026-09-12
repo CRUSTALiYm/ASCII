@@ -1,0 +1,54 @@
+@use "../../ascii-converter/design-tokens" as tokens;
+
+:host {
+  display: block;
+}
+
+.numeric-scrubber {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  font-family: tokens.$font-ui;
+}
+
+.numeric-scrubber__label {
+  overflow: hidden;
+  color: tokens.$color-text-primary;
+  font-size: 0.62rem;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.numeric-scrubber__value,
+.numeric-scrubber__input {
+  box-sizing: border-box;
+  min-width: 44px;
+  padding: 3px 8px;
+  color: tokens.$color-text-primary;
+  background: tokens.$color-bg-input;
+  border: 1px solid tokens.$color-border;
+  border-radius: tokens.$radius-sm;
+  font-family: tokens.$font-mono;
+  font-size: 0.62rem;
+  text-align: right;
+}
+
+.numeric-scrubber__value {
+  cursor: ew-resize;
+  touch-action: none;
+  user-select: none;
+
+  &:hover {
+    border-color: tokens.$color-accent-border;
+  }
+}
+
+.numeric-scrubber__input {
+  outline: none;
+
+  &:focus {
+    border-color: tokens.$color-accent;
+  }
+}

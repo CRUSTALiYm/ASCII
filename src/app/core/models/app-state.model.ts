@@ -20,6 +20,8 @@ export interface AppState {
   lastTone?: string;
   /** Сторона панели настроек ("left" | "right") — тоже appearance. */
   lastPanelPosition?: "left" | "right";
+  /** Фон превью: null — прозрачный, иначе CSS-цвет. */
+  lastBackground?: string | null;
 }
 
 export function defaultAppState(): AppState {

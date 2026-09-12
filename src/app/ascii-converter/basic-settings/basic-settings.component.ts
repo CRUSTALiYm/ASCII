@@ -1,10 +1,10 @@
 import { Component, inject } from "@angular/core";
 import { FormsModule } from "@angular/forms";
 import { ButtonModule } from "primeng/button";
-import { InputNumberModule } from "primeng/inputnumber";
 import { SelectModule } from "primeng/select";
 import { ToggleButtonModule } from "primeng/togglebutton";
 
+import { NumericScrubberComponent } from "../../shared/numeric-scrubber/numeric-scrubber.component";
 import { SettingsService } from "../../core/services/settings.service";
 import { CharacterPreset } from "../../core/models/character-preset.model";
 
@@ -12,7 +12,7 @@ import { CharacterPreset } from "../../core/models/character-preset.model";
   selector: "app-basic-settings",
   imports: [
     FormsModule,
-    InputNumberModule,
+    NumericScrubberComponent,
     SelectModule,
     ToggleButtonModule,
     ButtonModule,
@@ -23,9 +23,13 @@ import { CharacterPreset } from "../../core/models/character-preset.model";
 export class BasicSettingsComponent {
   readonly settings = inject(SettingsService);
 
-  onColumnsChange(value: number | null): void {
-    if (value === null) return;
-    this.settings.update("columns", Math.max(8, Math.round(value)));
+  // Клэмп на каждое изменение убран намеренно: если делать
+  // Math.max(8, ...) при каждом нажатии клавиши, первая же введённая
+  // цифра меньше 8 откатывает поле назад и не даёт набрать число целиком
+  // (например "200"). Минимум и так гарантирован на бэкенде (columns.max(8)
+  // в engine.rs) — фронту клэмпить незачем.
+  onColumnsChange(value: number): void {
+    this.settings.update("columns", Math.round(value));
   }
 
   onCharactersChange(value: string): void {

@@ -1,13 +1,12 @@
 <div class="basic-settings">
   <div class="basic-settings__field">
-    <label for="columns">Ширина (символов)</label>
-    <p-inputnumber
-      inputId="columns"
-      [ngModel]="settings.params().columns"
-      (ngModelChange)="onColumnsChange($event)"
+    <app-numeric-scrubber
+      label="Ширина (символов)"
+      [value]="settings.params().columns"
       [min]="8"
       [max]="2000"
-      [showButtons]="true"
+      [step]="1"
+      (valueChange)="onColumnsChange($event)"
     />
   </div>
 

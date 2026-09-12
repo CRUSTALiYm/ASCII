@@ -1,0 +1,27 @@
+<div class="numeric-scrubber">
+  @if (label) {
+    <span class="numeric-scrubber__label">{{ label }}</span>
+  }
+
+  @if (editing()) {
+    <input
+      #input
+      type="text"
+      inputmode="decimal"
+      class="numeric-scrubber__input"
+      [value]="draftValue()"
+      (input)="onDraftInput($any($event.target).value)"
+      (blur)="commitDraft()"
+      (keydown)="onKeydown($event)"
+    />
+  } @else {
+    <div
+      class="numeric-scrubber__value"
+      (pointerdown)="onPointerDown($event)"
+      (pointermove)="onPointerMove($event)"
+      (pointerup)="onPointerUp()"
+    >
+      {{ displayValue }}
+    </div>
+  }
+</div>

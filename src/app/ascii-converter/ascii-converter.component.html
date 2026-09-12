@@ -1,12 +1,40 @@
-<div class="ascii-converter">
+<div
+  class="ascii-converter"
+  [class.ascii-converter--left]="appearance.panelPosition() === 'left'"
+>
+  <div class="ascii-converter__toasts">
+    @for (item of notifications.items(); track item.id) {
+      <div
+        class="ascii-converter__toast"
+        [class.ascii-converter__toast--error]="item.severity === 'error'"
+      >
+        <span>{{ item.message }}</span>
+        <button type="button" (click)="notifications.dismiss(item.id)">
+          <i class="pi pi-times"></i>
+        </button>
+      </div>
+    }
+  </div>
+
   <aside class="ascii-converter__sidebar">
-    <app-source-picker
-      [sourceKind]="sourceKind()"
-      (sourceKindChange)="selectSource($event)"
-      (pickFile)="pickAndOpenFile()"
-      (startCamera)="startCameraStream()"
-      (startScreen)="startScreenStream()"
-    />
+    <div class="ascii-converter__sidebar-header">
+      <app-source-picker
+        class="ascii-converter__source-picker"
+        [sourceKind]="sourceKind()"
+        (sourceKindChange)="selectSource($event)"
+        (pickFile)="pickAndOpenFile()"
+        (startCamera)="startCameraStream()"
+        (startScreen)="startScreenStream()"
+      />
+      <button
+        type="button"
+        class="ascii-converter__panel-toggle"
+        title="Переместить панель настроек на другую сторону"
+        (click)="appearance.togglePanelPosition()"
+      >
+        <i class="pi pi-arrow-right-arrow-left"></i>
+      </button>
+    </div>
 
     <p-tabs value="basic">
       <p-tablist>
@@ -30,32 +58,54 @@
     <app-progress-indicator />
 
     <app-preview-panel
-      #previewPanel
       [result]="conversion.result()"
       [originalSrc]="fileSource.originalDataUrl() ?? camera.lastFrameDataUrl() ?? screen.lastFrameDataUrl()"
       [tone]="appearance.tone()"
+      [background]="appearance.background()"
     />
 
-    <div class="ascii-converter__actions">
-      <p-button
-        label="В историю"
-        icon="pi pi-bookmark"
-        [text]="true"
-        [disabled]="!conversion.result()"
-        (click)="saveToHistory()"
-      />
-      <p-button
-        label="Экспорт .txt"
-        icon="pi pi-file"
-        [disabled]="!conversion.result()"
-        (click)="exportText()"
-      />
-      <p-button
-        label="Экспорт .png"
-        icon="pi pi-image"
-        [disabled]="!conversion.result()"
-        (click)="exportImage(previewPanel.getCanvas()!)"
-      />
+    <div class="ascii-converter__toolbar">
+      <div class="ascii-converter__background-picker">
+        <span>Фон</span>
+        <button
+          type="button"
+          class="ascii-converter__background-swatch"
+          [class.ascii-converter__background-swatch--active]="!appearance.background()"
+          title="Прозрачный"
+          (click)="appearance.setBackground(null)"
+        >
+          <i class="pi pi-ban"></i>
+        </button>
+        <input
+          type="color"
+          class="ascii-converter__background-swatch ascii-converter__background-swatch--color"
+          [class.ascii-converter__background-swatch--active]="!!appearance.background()"
+          [value]="appearance.background() ?? '#000000'"
+          (input)="appearance.setBackground($any($event.target).value)"
+        />
+      </div>
+
+      <div class="ascii-converter__actions">
+        <p-button
+          label="В историю"
+          icon="pi pi-bookmark"
+          [text]="true"
+          [disabled]="!conversion.result()"
+          (click)="saveToHistory()"
+        />
+        <p-button
+          label="Экспорт .txt"
+          icon="pi pi-file"
+          [disabled]="!conversion.result()"
+          (click)="exportText()"
+        />
+        <p-button
+          label="Экспорт .png"
+          icon="pi pi-image"
+          [disabled]="!conversion.result()"
+          (click)="exportImage()"
+        />
+      </div>
     </div>
   </main>
 </div>

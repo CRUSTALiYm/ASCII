@@ -34,6 +34,7 @@ export class HistoryService {
       this.settings.params();
       this.settings.presets();
       this.appearance.tone();
+      this.appearance.background();
       this.appearance.panelPosition();
       if (this._ready()) this.scheduleSave();
     });
@@ -65,6 +66,7 @@ export class HistoryService {
     );
     this.settings.restoreLastSettings(state.lastSettings);
     this.appearance.restoreTone(state.lastTone);
+    this.appearance.restoreBackground(state.lastBackground);
     this.appearance.restorePanelPosition(state.lastPanelPosition);
     this._ready.set(true);
   }
@@ -114,6 +116,7 @@ export class HistoryService {
       settingsVersion: CURRENT_SETTINGS_VERSION,
       lastSettings: this.settings.params(),
       lastTone: this.appearance.tone(),
+      lastBackground: this.appearance.background(),
       lastPanelPosition: this.appearance.panelPosition(),
     };
     await this.bridge.saveAppState(state);

@@ -1,11 +1,11 @@
 import { Component, inject } from "@angular/core";
 import { FormsModule } from "@angular/forms";
-import { InputNumberModule } from "primeng/inputnumber";
 import { SelectModule } from "primeng/select";
 import { SliderModule } from "primeng/slider";
 import { TagModule } from "primeng/tag";
 import { ToggleButtonModule } from "primeng/togglebutton";
 
+import { NumericScrubberComponent } from "../../shared/numeric-scrubber/numeric-scrubber.component";
 import { SettingsService } from "../../core/services/settings.service";
 import { BackendsService } from "../../core/services/backends.service";
 import {
@@ -41,7 +41,7 @@ interface ComputeBackendOption {
   selector: "app-advanced-settings",
   imports: [
     FormsModule,
-    InputNumberModule,
+    NumericScrubberComponent,
     SelectModule,
     SliderModule,
     TagModule,

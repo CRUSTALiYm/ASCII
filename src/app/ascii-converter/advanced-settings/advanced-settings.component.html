@@ -108,16 +108,13 @@
     <h4>Адаптивный анализ яркости</h4>
 
     <div class="advanced-settings__field">
-      <div class="advanced-settings__field-label">
-        <span>Размер региональной сетки</span>
-        <span>{{ settings.params().adaptiveRegionTiles }}</span>
-      </div>
-      <p-inputnumber
-        [ngModel]="settings.params().adaptiveRegionTiles"
-        (ngModelChange)="setNumber('adaptiveRegionTiles', $event)"
+      <app-numeric-scrubber
+        label="Размер региональной сетки"
+        [value]="settings.params().adaptiveRegionTiles"
         [min]="2"
         [max]="32"
-        [showButtons]="true"
+        [step]="1"
+        (valueChange)="setNumber('adaptiveRegionTiles', $event)"
       />
     </div>
 

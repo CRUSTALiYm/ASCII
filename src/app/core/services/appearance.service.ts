@@ -16,12 +16,16 @@ export function builtInTonePresets(): TonePreset[] {
 
 export type PanelPosition = "left" | "right";
 
-/** Цвет текста превью — чисто визуальная настройка, в `AsciiParams` её
- * нет, на бэкенд не уходит. */
+/** Цвет текста превью и фон — чисто визуальные настройки, в `AsciiParams`
+ * их нет, на бэкенд не уходят. */
 @Injectable({ providedIn: "root" })
 export class AppearanceService {
   private readonly _tone = signal<string>(builtInTonePresets()[0].value);
   readonly tone = this._tone.asReadonly();
+
+  /** `null` — прозрачный фон (по умолчанию). Иначе — CSS-цвет из колорпикера. */
+  private readonly _background = signal<string | null>(null);
+  readonly background = this._background.asReadonly();
 
   private readonly _panelPosition = signal<PanelPosition>("right");
   readonly panelPosition = this._panelPosition.asReadonly();
@@ -32,6 +36,14 @@ export class AppearanceService {
 
   restoreTone(value: string | undefined): void {
     if (value) this._tone.set(value);
+  }
+
+  setBackground(value: string | null): void {
+    this._background.set(value);
+  }
+
+  restoreBackground(value: string | null | undefined): void {
+    if (value !== undefined) this._background.set(value);
   }
 
   setPanelPosition(value: PanelPosition): void {

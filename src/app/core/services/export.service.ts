@@ -3,6 +3,10 @@ import { save } from "@tauri-apps/plugin-dialog";
 
 import { TauriBridgeService } from "./tauri-bridge.service";
 import { ConvertResult } from "../models/convert-result.model";
+import {
+  AsciiRenderOptions,
+  createExportCanvas,
+} from "../utils/ascii-canvas-render";
 
 @Injectable({ providedIn: "root" })
 export class ExportService {
@@ -21,11 +25,16 @@ export class ExportService {
     return path;
   }
 
-  /** `canvas` — тот же canvas, что рисует превью (ascii-canvas-render.ts),
-   * поэтому экспортированная картинка пиксель в пиксель совпадает с тем,
-   * что видел пользователь. */
+  /** Рендерит результат заново в отдельный canvas с разрешением,
+   * привязанным к количеству символов (см. createExportCanvas), а не к
+   * размеру панели превью на экране — иначе символы становятся
+   * нечитаемыми при увеличении сохранённой картинки. `sourceAspect` берём
+   * у preview-panel (`getSourceAspect()`), чтобы пропорции экспорта
+   * совпадали с тем, что видел пользователь. */
   async exportAsImage(
-    canvas: HTMLCanvasElement,
+    result: ConvertResult,
+    sourceAspect: number,
+    options: AsciiRenderOptions,
     suggestedName = "ascii-art.png",
   ): Promise<string | null> {
     const path = await save({
@@ -33,6 +42,8 @@ export class ExportService {
       filters: [{ name: "Изображение", extensions: ["png"] }],
     });
     if (!path) return null;
+
+    const canvas = createExportCanvas(result, sourceAspect, options);
     const dataUrl = canvas.toDataURL("image/png");
     await this.bridge.saveExport(path, dataUrl, true);
     return path;

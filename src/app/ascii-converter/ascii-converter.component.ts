@@ -1,4 +1,4 @@
-import { Component, DestroyRef, effect, inject, signal } from "@angular/core";
+import { Component, DestroyRef, ViewChild, effect, inject, signal } from "@angular/core";
 import { ButtonModule } from "primeng/button";
 import { TabsModule } from "primeng/tabs";
 
@@ -41,6 +41,8 @@ const AUTO_CONVERT_DEBOUNCE_MS = 150;
 export class AsciiConverterComponent {
   private readonly destroyRef = inject(DestroyRef);
   private readonly exportService = inject(ExportService);
+
+  @ViewChild(PreviewPanelComponent) private previewPanel?: PreviewPanelComponent;
 
   readonly settings = inject(SettingsService);
   readonly conversion = inject(ConversionService);
@@ -147,8 +149,14 @@ export class AsciiConverterComponent {
     if (result) void this.exportService.exportAsText(result);
   }
 
-  exportImage(canvas: HTMLCanvasElement): void {
-    void this.exportService.exportAsImage(canvas);
+  exportImage(): void {
+    const result = this.conversion.result();
+    if (!result) return;
+    const aspect = this.previewPanel?.getSourceAspect() ?? 1;
+    void this.exportService.exportAsImage(result, aspect, {
+      color: this.appearance.tone(),
+      background: this.appearance.background(),
+    });
   }
 
   private async afterFileLoaded(path: string): Promise<void> {
