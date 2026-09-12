@@ -3,28 +3,22 @@
     <h4>Целевые правки</h4>
 
     <div class="advanced-settings__field">
-      <div class="advanced-settings__field-label">
-        <span>Яркость</span>
-        <span>{{ settings.params().brightness }}</span>
-      </div>
-      <p-slider
-        [ngModel]="settings.params().brightness"
-        (ngModelChange)="setNumber('brightness', $event)"
+      <app-numeric-scrubber
+        label="Яркость"
+        [value]="settings.params().brightness"
         [min]="-100"
         [max]="100"
+        (valueChange)="setNumber('brightness', $event)"
       />
     </div>
 
     <div class="advanced-settings__field">
-      <div class="advanced-settings__field-label">
-        <span>Контраст</span>
-        <span>{{ settings.params().contrast }}</span>
-      </div>
-      <p-slider
-        [ngModel]="settings.params().contrast"
-        (ngModelChange)="setNumber('contrast', $event)"
+      <app-numeric-scrubber
+        label="Контраст"
+        [value]="settings.params().contrast"
         [min]="-100"
         [max]="100"
+        (valueChange)="setNumber('contrast', $event)"
       />
     </div>
 
@@ -43,28 +37,22 @@
     <h4>Исходные правки</h4>
 
     <div class="advanced-settings__field">
-      <div class="advanced-settings__field-label">
-        <span>Яркость источника</span>
-        <span>{{ settings.params().sourceBrightness }}</span>
-      </div>
-      <p-slider
-        [ngModel]="settings.params().sourceBrightness"
-        (ngModelChange)="setNumber('sourceBrightness', $event)"
+      <app-numeric-scrubber
+        label="Яркость источника"
+        [value]="settings.params().sourceBrightness"
         [min]="-100"
         [max]="100"
+        (valueChange)="setNumber('sourceBrightness', $event)"
       />
     </div>
 
     <div class="advanced-settings__field">
-      <div class="advanced-settings__field-label">
-        <span>Контраст источника</span>
-        <span>{{ settings.params().sourceContrast }}</span>
-      </div>
-      <p-slider
-        [ngModel]="settings.params().sourceContrast"
-        (ngModelChange)="setNumber('sourceContrast', $event)"
+      <app-numeric-scrubber
+        label="Контраст источника"
+        [value]="settings.params().sourceContrast"
         [min]="-100"
         [max]="100"
+        (valueChange)="setNumber('sourceContrast', $event)"
       />
     </div>
 
@@ -90,15 +78,12 @@
 
     @if (settings.params().sourceBlackWhite) {
       <div class="advanced-settings__field">
-        <div class="advanced-settings__field-label">
-          <span>Порог</span>
-          <span>{{ settings.params().sourceThreshold }}</span>
-        </div>
-        <p-slider
-          [ngModel]="settings.params().sourceThreshold"
-          (ngModelChange)="setNumber('sourceThreshold', $event)"
+        <app-numeric-scrubber
+          label="Порог"
+          [value]="settings.params().sourceThreshold"
           [min]="0"
           [max]="100"
+          (valueChange)="setNumber('sourceThreshold', $event)"
         />
       </div>
     }
@@ -119,57 +104,47 @@
     </div>
 
     <div class="advanced-settings__field">
-      <div class="advanced-settings__field-label">
-        <span>Обрезка перцентиля, %</span>
-        <span>{{ settings.params().adaptivePercentile }}</span>
-      </div>
-      <p-slider
-        [ngModel]="settings.params().adaptivePercentile"
-        (ngModelChange)="setNumber('adaptivePercentile', $event)"
+      <app-numeric-scrubber
+        label="Обрезка перцентиля, %"
+        [value]="settings.params().adaptivePercentile"
         [min]="0.5"
         [max]="45"
         [step]="0.5"
+        (valueChange)="setNumber('adaptivePercentile', $event)"
       />
     </div>
 
     <div class="advanced-settings__field">
-      <div class="advanced-settings__field-label">
-        <span>Сглаживание по соседям</span>
-        <span>{{ settings.params().adaptiveSmoothing }}</span>
-      </div>
-      <p-slider
-        [ngModel]="settings.params().adaptiveSmoothing"
-        (ngModelChange)="setNumber('adaptiveSmoothing', $event)"
+      <app-numeric-scrubber
+        label="Сглаживание по соседям"
+        [value]="settings.params().adaptiveSmoothing"
         [min]="0"
         [max]="1"
         [step]="0.05"
+        [sensitivity]="8"
+        (valueChange)="setNumber('adaptiveSmoothing', $event)"
       />
     </div>
 
     <div class="advanced-settings__field">
-      <div class="advanced-settings__field-label">
-        <span>Минимальный диапазон</span>
-        <span>{{ settings.params().adaptiveMinRange }}</span>
-      </div>
-      <p-slider
-        [ngModel]="settings.params().adaptiveMinRange"
-        (ngModelChange)="setNumber('adaptiveMinRange', $event)"
+      <app-numeric-scrubber
+        label="Минимальный диапазон"
+        [value]="settings.params().adaptiveMinRange"
         [min]="0"
         [max]="255"
+        (valueChange)="setNumber('adaptiveMinRange', $event)"
       />
     </div>
 
     <div class="advanced-settings__field">
-      <div class="advanced-settings__field-label">
-        <span>Порог подавления выбросов</span>
-        <span>{{ settings.params().adaptiveDespikeThreshold }}</span>
-      </div>
-      <p-slider
-        [ngModel]="settings.params().adaptiveDespikeThreshold"
-        (ngModelChange)="setNumber('adaptiveDespikeThreshold', $event)"
+      <app-numeric-scrubber
+        label="Порог подавления выбросов"
+        [value]="settings.params().adaptiveDespikeThreshold"
         [min]="0"
         [max]="1"
         [step]="0.02"
+        [sensitivity]="8"
+        (valueChange)="setNumber('adaptiveDespikeThreshold', $event)"
       />
     </div>
   </section>
@@ -199,5 +174,19 @@
         </div>
       </ng-template>
     </p-select>
+  </section>
+
+  <section class="advanced-settings__section">
+    <h4>Рендер-бэкенды (обнаружено)</h4>
+    <div class="advanced-settings__backend-list">
+      @for (backend of backends.renderBackends(); track backend.id) {
+        <p-tag
+          [severity]="backend.kind === 'gpu' ? 'success' : 'secondary'"
+          [value]="backend.label"
+        />
+      } @empty {
+        <span class="advanced-settings__backend-empty">Определяются…</span>
+      }
+    </div>
   </section>
 </div>

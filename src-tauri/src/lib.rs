@@ -13,11 +13,16 @@ mod lib {
 use lib::*;
 use jobs::JobRegistry;
 use tauri_plugin_updater::UpdaterExt;
-
+ 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
-    tauri::Builder::default()
-        .manage(JobRegistry::new())
+    let builder = tauri::Builder::default()
+        .manage(JobRegistry::new());
+ 
+    #[cfg(feature = "camera")]
+    let builder = builder.manage(camera::CameraRegistry::new());
+ 
+    builder
         .setup(|app| {
             let handle = app.handle().clone();
             tauri::async_runtime::spawn(async move {
@@ -47,17 +52,18 @@ pub fn run() {
             compute::list_compute_backends,
             camera::list_camera_devices,
             camera::capture_camera_frame,
+            camera::release_camera,
             screen::list_screen_sources,
             screen::capture_screen_frame
         ])
         .run(tauri::generate_context!())
         .expect("Произошла ошибка при запуске приложения");
 }
-
+ 
 async fn update(app: tauri::AppHandle) -> tauri_plugin_updater::Result<()> {
     if let Some(update) = app.updater()?.check().await? {
         let mut downloaded = 0;
-
+ 
         update
             .download_and_install(
                 |chunk_length, content_length| {
@@ -69,10 +75,10 @@ async fn update(app: tauri::AppHandle) -> tauri_plugin_updater::Result<()> {
                 },
             )
             .await?;
-
+ 
         println!("Обновление установлено");
         app.restart();
     }
-
+ 
     Ok(())
 }

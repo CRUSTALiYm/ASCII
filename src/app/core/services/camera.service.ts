@@ -83,5 +83,9 @@ export class CameraService {
       clearTimeout(this.loopHandle);
       this.loopHandle = null;
     }
+    const index = this._selectedIndex();
+    if (index !== null) {
+      void this.bridge.releaseCamera(index);
+    }
   }
 }

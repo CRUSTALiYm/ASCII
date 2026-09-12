@@ -1,7 +1,6 @@
 import { Component, inject } from "@angular/core";
 import { FormsModule } from "@angular/forms";
 import { SelectModule } from "primeng/select";
-import { SliderModule } from "primeng/slider";
 import { TagModule } from "primeng/tag";
 import { ToggleButtonModule } from "primeng/togglebutton";
 
@@ -43,7 +42,6 @@ interface ComputeBackendOption {
     FormsModule,
     NumericScrubberComponent,
     SelectModule,
-    SliderModule,
     TagModule,
     ToggleButtonModule,
   ],

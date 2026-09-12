@@ -108,6 +108,10 @@ export class TauriBridgeService {
     return invoke<string>("capture_camera_frame", { deviceIndex });
   }
 
+  releaseCamera(deviceIndex: number): Promise<void> {
+    return invoke("release_camera", { deviceIndex });
+  }
+
   // --- экран (screen.rs) ------------------------------------------------------
 
   listScreenSources(): Promise<ScreenSourceInfo[]> {

@@ -24,7 +24,12 @@
     p-inputnumber,
     p-select {
       width: 100%;
+      min-width: 0;
     }
+  }
+
+  ::ng-deep p-select .p-select {
+    width: 100%;
   }
 
   &__character-preview {

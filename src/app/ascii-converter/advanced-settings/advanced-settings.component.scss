@@ -66,4 +66,25 @@
     gap: 8px;
     width: 100%;
   }
+
+  &__backend-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  &__backend-empty {
+    color: tokens.$color-text-faint;
+    font-size: 0.6rem;
+  }
+
+  ::ng-deep p-select {
+    display: block;
+    width: 100%;
+    min-width: 0;
+
+    .p-select {
+      width: 100%;
+    }
+  }
 }
