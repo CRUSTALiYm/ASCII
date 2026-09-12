@@ -17,7 +17,7 @@ import {
 } from "../../core/utils/coordinate-mapper";
 import {
   renderAsciiToCanvas,
-  resultAspectRatio,
+  sourceAspectFromResult,
 } from "../../core/utils/ascii-canvas-render";
 
 export type PreviewMode = "result" | "original" | "overlay" | "slider";
@@ -33,41 +33,43 @@ export class PreviewPanelComponent implements AfterViewInit, OnDestroy {
   readonly result = input<ConvertResult | null>(null);
   readonly originalSrc = input<string | null>(null);
   readonly tone = input("#e5e7eb");
+  readonly background = input<string | null>(null);
 
   @ViewChild("stage") private stageRef?: ElementRef<HTMLDivElement>;
   @ViewChild("canvas") private canvasRef?: ElementRef<HTMLCanvasElement>;
 
   readonly mode = signal<PreviewMode>("result");
   readonly sliderPosition = signal(0.5);
-  readonly resultRect = signal<Rect>(EMPTY_RECT);
-  readonly originalRect = signal<Rect>(EMPTY_RECT);
+
+  /** ОДИН прямоугольник для картинки и canvas во всех режимах — раньше у
+   * каждого был свой (resultRect считался из columns/rows без поправки на
+   * то, что Rust уже сжал rows под моноширинный шрифт), из-за чего
+   * Result визуально не совпадал с Original. */
+  readonly contentRect = signal<Rect>(EMPTY_RECT);
 
   private resizeObserver?: ResizeObserver;
   private originalNaturalSize: { width: number; height: number } | null =
     null;
 
   constructor() {
-    // Раскладка (fitContain) — реагирует на смену результата/режима и на
-    // ресайз панели (см. ngAfterViewInit).
     effect(() => {
       this.result();
       this.mode();
       this.recomputeLayout();
     });
 
-    // Рендер canvas — единственный вызов renderAsciiToCanvas на весь
-    // компонент, тот же самый и для Result, и для Overlay, и для Slider.
     effect(() => {
       const result = this.result();
       const tone = this.tone();
-      const rect = this.resultRect();
+      const background = this.background();
+      const rect = this.contentRect();
       const canvas = this.canvasRef?.nativeElement;
       if (!result || !canvas || rect.width <= 0) return;
 
       const dpr = window.devicePixelRatio || 1;
       canvas.width = Math.max(1, Math.round(rect.width * dpr));
       canvas.height = Math.max(1, Math.round(rect.height * dpr));
-      renderAsciiToCanvas(canvas, result, { color: tone });
+      renderAsciiToCanvas(canvas, result, { color: tone, background });
     });
   }
 
@@ -103,20 +105,6 @@ export class PreviewPanelComponent implements AfterViewInit, OnDestroy {
     this.updateSliderFromEvent(event);
   }
 
-  /** export.service рисует PNG-экспорт из этого же canvas, что видел
-   * пользователь — не из отдельного рендера. */
-  getCanvas(): HTMLCanvasElement | null {
-    return this.canvasRef?.nativeElement ?? null;
-  }
-
-  /** В Result/Overlay/Slider оба слоя используют ОДИН и тот же
-   * прямоугольник (resultRect), иначе сравнение "плывёт" при несовпадении
-   * aspect ratio исходника и ASCII-сетки. Только чистый "Оригинал"
-   * показывается в своих собственных пропорциях. */
-  activeOriginalRect(): Rect {
-    return this.mode() === "original" ? this.originalRect() : this.resultRect();
-  }
-
   originalClipPath(): string | null {
     if (this.mode() !== "slider") return null;
     const visiblePercent = this.sliderPosition() * 100;
@@ -129,18 +117,27 @@ export class PreviewPanelComponent implements AfterViewInit, OnDestroy {
     return `inset(0 0 0 ${hiddenPercent}%)`;
   }
 
+  /** export.service рисует PNG-экспорт по этим же пропорциям, но в
+   * отдельном, полноразмерном canvas — не по маленькому canvas превью. */
+  getSourceAspect(): number {
+    if (this.originalNaturalSize) {
+      return this.originalNaturalSize.width / this.originalNaturalSize.height;
+    }
+    const result = this.result();
+    return result ? sourceAspectFromResult(result) : 1;
+  }
+
   private updateSliderFromEvent(event: PointerEvent): void {
     const stage = this.stageRef?.nativeElement;
     if (!stage) return;
     const bounds = stage.getBoundingClientRect();
     this.sliderPosition.set(
-      pointToFraction(event.clientX - bounds.left, this.resultRect()),
+      pointToFraction(event.clientX - bounds.left, this.contentRect()),
     );
   }
 
   private recomputeLayout(): void {
     const stage = this.stageRef?.nativeElement;
-    const result = this.result();
     if (!stage) return;
 
     const container = {
@@ -148,12 +145,15 @@ export class PreviewPanelComponent implements AfterViewInit, OnDestroy {
       height: stage.clientHeight,
     };
 
-    if (result) {
-      const aspect = resultAspectRatio(result);
-      this.resultRect.set(fitContain({ width: aspect, height: 1 }, container));
+    const sourceSize = this.originalNaturalSize ?? this.approximateSourceSize();
+    if (sourceSize) {
+      this.contentRect.set(fitContain(sourceSize, container));
     }
-    if (this.originalNaturalSize) {
-      this.originalRect.set(fitContain(this.originalNaturalSize, container));
-    }
+  }
+
+  private approximateSourceSize(): { width: number; height: number } | null {
+    const result = this.result();
+    if (!result) return null;
+    return { width: sourceAspectFromResult(result), height: 1 };
   }
 }

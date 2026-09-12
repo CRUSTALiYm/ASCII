@@ -2,8 +2,8 @@ import { ConvertResult } from "../models/convert-result.model";
 
 export interface AsciiRenderOptions {
   color: string;
-  /** Если не задан — фон остаётся прозрачным. */
-  background?: string;
+  /** `null`/не задан — фон остаётся прозрачным. */
+  background?: string | null;
   fontFamily?: string;
 }
 
@@ -12,8 +12,8 @@ const DEFAULT_FONT_FAMILY =
 
 /** Рисует `ConvertResult` на canvas как моноширинную сетку символов. Эта
  * функция — единственный рендер во всём приложении: её вызывает и живое
- * превью, и экспорт в PNG, поэтому скачанная картинка пиксель-в-пиксель
- * совпадает с тем, что видел пользователь. */
+ * превью, и экспорт (через `createExportCanvas`), поэтому результат
+ * пиксель-в-пиксель совпадает с тем, что видел пользователь. */
 export function renderAsciiToCanvas(
   canvas: HTMLCanvasElement,
   result: ConvertResult,
@@ -58,9 +58,38 @@ export function renderAsciiToCanvas(
   }
 }
 
-/** Соотношение сторон ASCII-сетки — источник для `fitContain` при
- * размещении canvas в панели превью. */
-export function resultAspectRatio(result: ConvertResult): number {
+// Должно совпадать с `* 0.5` при расчёте rows в engine.rs — это и есть
+// компенсация того, что символ моноширинного шрифта уже, чем высок.
+const CHAR_HEIGHT_COMPENSATION = 0.5;
+
+/** Пропорции (width/height) исходного изображения, ВОССТАНОВЛЕННЫЕ из
+ * размера ASCII-сетки. Использовать только как fallback, когда реальные
+ * пропорции оригинала ещё не известны (картинка ещё не загрузилась) —
+ * настоящий источник правды это naturalWidth/naturalHeight оригинала,
+ * который и должен совпадать с этим значением с точностью до округления.
+ *
+ * Раньше здесь было голое `columns / rows`, что игнорировало компенсацию
+ * из engine.rs и давало пропорции ВДВОЕ шире реальных — отсюда
+ * несовпадение Result с Original в превью. */
+export function sourceAspectFromResult(result: ConvertResult): number {
   if (result.rows === 0) return 1;
-  return result.columns / result.rows;
+  return result.columns / (result.rows / CHAR_HEIGHT_COMPENSATION);
+}
+
+const EXPORT_PIXELS_PER_COLUMN = 16;
+
+/** Рендерит результат в новый, отдельный от превью canvas — с
+ * разрешением, привязанным к количеству символов, а не к размеру панели
+ * на экране. Экспорт больше не наследует маленькое разрешение живого
+ * превью: символы остаются чёткими при увеличении сохранённой картинки. */
+export function createExportCanvas(
+  result: ConvertResult,
+  sourceAspect: number,
+  options: AsciiRenderOptions,
+): HTMLCanvasElement {
+  const canvas = document.createElement("canvas");
+  canvas.width = Math.max(1, Math.round(result.columns * EXPORT_PIXELS_PER_COLUMN));
+  canvas.height = Math.max(1, Math.round(canvas.width / Math.max(sourceAspect, 0.01)));
+  renderAsciiToCanvas(canvas, result, options);
+  return canvas;
 }

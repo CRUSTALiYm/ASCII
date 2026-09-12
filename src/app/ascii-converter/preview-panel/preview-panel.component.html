@@ -12,10 +12,10 @@
         [src]="src"
         (load)="onOriginalImageLoad(originalImage)"
         [style.display]="mode() === 'result' ? 'none' : 'block'"
-        [style.left.px]="activeOriginalRect().x"
-        [style.top.px]="activeOriginalRect().y"
-        [style.width.px]="activeOriginalRect().width"
-        [style.height.px]="activeOriginalRect().height"
+        [style.left.px]="contentRect().x"
+        [style.top.px]="contentRect().y"
+        [style.width.px]="contentRect().width"
+        [style.height.px]="contentRect().height"
         [style.opacity]="mode() === 'overlay' ? 0.35 : 1"
         [style.clipPath]="originalClipPath()"
         alt="Оригинал"
@@ -26,17 +26,17 @@
       #canvas
       class="preview-panel__canvas"
       [style.display]="mode() === 'original' ? 'none' : 'block'"
-      [style.left.px]="resultRect().x"
-      [style.top.px]="resultRect().y"
-      [style.width.px]="resultRect().width"
-      [style.height.px]="resultRect().height"
+      [style.left.px]="contentRect().x"
+      [style.top.px]="contentRect().y"
+      [style.width.px]="contentRect().width"
+      [style.height.px]="contentRect().height"
       [style.clipPath]="resultClipPath()"
     ></canvas>
 
     @if (mode() === "slider") {
       <div
         class="preview-panel__split-line"
-        [style.left.px]="resultRect().x + resultRect().width * sliderPosition()"
+        [style.left.px]="contentRect().x + contentRect().width * sliderPosition()"
         (pointerdown)="onSliderPointerDown($event)"
         (pointermove)="onSliderPointerMove($event)"
       ></div>
