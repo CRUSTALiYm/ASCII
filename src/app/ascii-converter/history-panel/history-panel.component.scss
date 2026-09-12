@@ -1,6 +1,14 @@
 @use "../design-tokens" as tokens;
 
+:host {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+}
+
 .history-panel {
+  min-height: 0;
+  overflow-y: auto;
   display: flex;
   flex-direction: column;
   gap: 12px;

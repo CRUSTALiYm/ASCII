@@ -1,5 +1,9 @@
 @use "../design-tokens" as tokens;
 
+:host {
+  display: block;
+}
+
 .advanced-settings {
   display: flex;
   flex-direction: column;

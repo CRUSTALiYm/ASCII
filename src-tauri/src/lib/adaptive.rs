@@ -43,7 +43,7 @@ fn build_global_stats(region_histograms: &[[u32; 256]], trim: f32) -> GlobalLuma
         }
     }
     let p_low = percentile_from_histogram(&histogram, trim);
-    let p_high = percentile_from_histogram(&histogram, 1.0 - trim).max(p_low + 1);
+    let p_high = percentile_from_histogram(&histogram, 1.0 - trim).max(p_low.saturating_add(1));
     GlobalLumaStats { p_low, p_high }
 }
 
@@ -52,7 +52,7 @@ fn build_region_stats(region_histograms: &[[u32; 256]], trim: f32) -> Vec<Region
         .iter()
         .map(|histogram| {
             let p_low = percentile_from_histogram(histogram, trim);
-            let p_high = percentile_from_histogram(histogram, 1.0 - trim).max(p_low + 1);
+            let p_high = percentile_from_histogram(histogram, 1.0 - trim).max(p_low.saturating_add(1));
             RegionStats { p_low, p_high }
         })
         .collect()
@@ -216,12 +216,7 @@ pub fn normalize_and_adjust(mean: f32, low: f32, high: f32, params: &AsciiParams
     apply_brightness_contrast(value, params.brightness, params.contrast, params.invert)
 }
 
-pub fn normalize_cells_cpu(
-    means: &[f32],
-    lows: &[f32],
-    highs: &[f32],
-    params: &AsciiParams,
-) -> Vec<f32> {
+pub fn normalize_cells_cpu(means: &[f32], lows: &[f32], highs: &[f32], params: &AsciiParams) -> Vec<f32> {
     means
         .iter()
         .zip(lows.iter())
@@ -246,11 +241,7 @@ pub fn scan_pixels_cpu(
     }
 }
 
-fn compute_region_histograms(
-    luma: &image::GrayImage,
-    tiles_x: u32,
-    tiles_y: u32,
-) -> Vec<[u32; 256]> {
+fn compute_region_histograms(luma: &image::GrayImage, tiles_x: u32, tiles_y: u32) -> Vec<[u32; 256]> {
     let (width, height) = luma.dimensions();
     (0..(tiles_y * tiles_x))
         .into_par_iter()
