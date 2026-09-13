@@ -1,6 +1,7 @@
 use crate::compute::PixelScanResult;
 use crate::params::AsciiParams;
 use bytemuck::{Pod, Zeroable};
+use std::sync::OnceLock;
 use wgpu::util::DeviceExt;
 
 const NORMALIZE_SHADER_SOURCE: &str = include_str!("kernels/normalize_cells.wgsl");
@@ -57,8 +58,15 @@ async fn request_device() -> Option<(wgpu::Device, wgpu::Queue)> {
         .ok()
 }
 
+fn gpu_context() -> Option<(wgpu::Device, wgpu::Queue)> {
+    static CONTEXT: OnceLock<Option<(wgpu::Device, wgpu::Queue)>> = OnceLock::new();
+    CONTEXT
+        .get_or_init(|| pollster::block_on(request_device()))
+        .clone()
+}
+
 pub fn is_available() -> bool {
-    pollster::block_on(request_device()).is_some()
+    gpu_context().is_some()
 }
 
 fn poll_and_read<T: Pod>(device: &wgpu::Device, buffer: &wgpu::Buffer) -> Result<Vec<T>, String> {
@@ -98,22 +106,11 @@ pub fn scan_pixels_webgpu(
     tiles_x: u32,
     tiles_y: u32,
 ) -> Result<PixelScanResult, String> {
-    pollster::block_on(run_scan(luma, columns, rows, tiles_x, tiles_y))
-}
-
-async fn run_scan(
-    luma: &image::GrayImage,
-    columns: u32,
-    rows: u32,
-    tiles_x: u32,
-    tiles_y: u32,
-) -> Result<PixelScanResult, String> {
     let (width, height) = luma.dimensions();
     if width == 0 || height == 0 {
         return Err("Пустое изображение".into());
     }
-
-    let (device, queue) = request_device().await.ok_or("WebGPU-адаптер не найден")?;
+    let (device, queue) = gpu_context().ok_or("WebGPU-адаптер не найден")?;
 
     // Storage-буферы WGSL оперируют u32 — каждый байт яркости кладём в
     // отдельный u32. Проще и безопаснее упаковки 4xu8 в один u32, хоть и
@@ -298,21 +295,12 @@ pub fn normalize_cells_webgpu(
     highs: &[f32],
     params: &AsciiParams,
 ) -> Result<Vec<f32>, String> {
-    pollster::block_on(run_normalize(means, lows, highs, params))
-}
-
-async fn run_normalize(
-    means: &[f32],
-    lows: &[f32],
-    highs: &[f32],
-    params: &AsciiParams,
-) -> Result<Vec<f32>, String> {
     let count = means.len();
     if count == 0 {
         return Ok(Vec::new());
     }
 
-    let (device, queue) = request_device().await.ok_or("WebGPU-адаптер не найден")?;
+    let (device, queue) = gpu_context().ok_or("WebGPU-адаптер не найден")?;
 
     let shader = device.create_shader_module(wgpu::ShaderModuleDescriptor {
         label: Some("normalize_cells"),

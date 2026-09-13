@@ -34,9 +34,15 @@ pub fn list_screen_sources() -> Result<Vec<ScreenSourceInfo>, String> {
             if window.is_minimized().map_err(|e| e.to_string())? {
                 continue;
             }
+            let title = window.title().map_err(|e| e.to_string())?;
+            // Системные/невидимые окна часто отдают пустой заголовок — не
+            // показываем их пользователю, выбрать всё равно нечего.
+            if title.trim().is_empty() {
+                continue;
+            }
             sources.push(ScreenSourceInfo {
                 id: format!("window:{}", window.id().map_err(|e| e.to_string())?),
-                label: window.title().map_err(|e| e.to_string())?,
+                label: title,
                 width: window.width().map_err(|e| e.to_string())?,
                 height: window.height().map_err(|e| e.to_string())?,
                 kind: "window".into(),

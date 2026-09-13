@@ -78,13 +78,10 @@
     font-size: 0.6rem;
   }
 
-  ::ng-deep p-select {
+  ::ng-deep p-select.p-select,
+  ::ng-deep p-select .p-select {
     display: block;
     width: 100%;
     min-width: 0;
-
-    .p-select {
-      width: 100%;
-    }
   }
 }

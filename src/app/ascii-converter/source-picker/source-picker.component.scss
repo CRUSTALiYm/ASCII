@@ -64,6 +64,7 @@
   }
 }
 
-::ng-deep .source-picker__stream-controls .p-select {
+::ng-deep .source-picker__stream-controls p-select.p-select,
+::ng-deep .source-picker__stream-controls p-select .p-select {
   width: 100%;
 }
