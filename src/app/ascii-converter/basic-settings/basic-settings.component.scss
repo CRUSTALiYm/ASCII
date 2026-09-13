@@ -97,13 +97,18 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 12px;
+    gap: 10px;
     padding: 12px 0;
     border-top: 1px solid tokens.$color-border;
     border-bottom: 1px solid tokens.$color-border;
 
+    > div {
+      min-width: 0;
+    }
+
     strong {
       display: block;
+      overflow-wrap: break-word;
       margin-bottom: 3px;
       color: tokens.$color-text-primary;
       font-size: 0.65rem;
@@ -111,8 +116,13 @@
 
     small {
       display: block;
+      overflow-wrap: break-word;
       color: tokens.$color-text-muted;
       font-size: 0.57rem;
+    }
+
+    p-togglebutton {
+      flex-shrink: 0;
     }
   }
 }

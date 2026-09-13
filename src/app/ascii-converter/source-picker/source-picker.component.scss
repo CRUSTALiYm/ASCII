@@ -54,12 +54,11 @@
 
   &__stream-controls {
     display: flex;
-    align-items: center;
+    flex-direction: column;
     gap: 6px;
     min-width: 0;
 
     p-select {
-      flex: 1;
       min-width: 0;
     }
   }

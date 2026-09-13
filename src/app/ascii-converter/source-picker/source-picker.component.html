@@ -34,6 +34,7 @@
           (ngModelChange)="onCameraDeviceChange($event)"
         />
         <p-button
+          styleClass="w-full"
           [label]="camera.isStreaming() ? 'Остановить' : 'Включить'"
           [icon]="camera.isStreaming() ? 'pi pi-stop' : 'pi pi-play'"
           [disabled]="camera.selectedIndex() === null"
@@ -53,6 +54,7 @@
           (ngModelChange)="onScreenSourceChange($event)"
         />
         <p-button
+          styleClass="w-full"
           [label]="screen.isStreaming() ? 'Остановить' : 'Включить'"
           [icon]="screen.isStreaming() ? 'pi pi-stop' : 'pi pi-play'"
           [disabled]="screen.selectedId() === null"

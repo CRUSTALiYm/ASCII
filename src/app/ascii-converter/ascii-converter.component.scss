@@ -20,7 +20,16 @@
   background: tokens.$color-bg-app;
   gap: 16px;
 
-  &--left .ascii-converter__sidebar {
+  // По умолчанию (без --left) сайдбар идёт ПОСЛЕ main — то есть справа,
+  // как и просили. Раньше здесь не было правила для дефолтного состояния
+  // вообще, и сайдбар всегда оставался слева (первым в DOM), потому что
+  // и у него, и у main order был одинаковый (0) — переключатель был
+  // фактически без эффекта.
+  &__sidebar {
+    order: 1;
+  }
+
+  &--left &__sidebar {
     order: -1;
   }
 }
@@ -179,11 +188,8 @@
     overflow-x: hidden;
   }
 
-  .ascii-converter--left .ascii-converter__sidebar {
-    order: 0;
-  }
-
   .ascii-converter__sidebar {
+    order: 0;
     flex: 0 0 auto;
     max-height: 40vh;
   }
