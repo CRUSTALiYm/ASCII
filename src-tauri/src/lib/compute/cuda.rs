@@ -1,6 +1,7 @@
 use crate::compute::PixelScanResult;
 use crate::params::AsciiParams;
 use cudarc::driver::{CudaContext, LaunchConfig, PushKernelArg};
+use std::sync::{Arc, OnceLock};
 
 const NORMALIZE_KERNEL_CU_SOURCE: &str = include_str!("kernels/normalize_cells.cu");
 const NORMALIZE_PRECOMPILED_PTX: &str =
@@ -8,8 +9,13 @@ const NORMALIZE_PRECOMPILED_PTX: &str =
 const SCAN_KERNEL_SOURCE: &str = include_str!("kernels/scan_pixels.cu");
 const SCAN_PRECOMPILED_PTX: &str = include_str!(concat!(env!("OUT_DIR"), "/scan_pixels.ptx"));
 
+fn cuda_context() -> Option<Arc<CudaContext>> {
+    static CONTEXT: OnceLock<Option<Arc<CudaContext>>> = OnceLock::new();
+    CONTEXT.get_or_init(|| CudaContext::new(0).ok()).clone()
+}
+
 pub fn is_available() -> bool {
-    CudaContext::new(0).is_ok()
+    cuda_context().is_some()
 }
 
 pub fn scan_pixels_cuda(
@@ -24,7 +30,7 @@ pub fn scan_pixels_cuda(
         return Err("Пустое изображение".into());
     }
 
-    let ctx = CudaContext::new(0).map_err(|error| error.to_string())?;
+    let ctx = cuda_context().ok_or("CUDA-контекст недоступен")?;
     let stream = ctx.default_stream();
 
     let d_luma = stream
@@ -87,9 +93,7 @@ pub fn scan_pixels_cuda(
     let histograms_flat: Vec<u32> = stream
         .clone_dtoh(&d_histograms)
         .map_err(|error| error.to_string())?;
-    let sums: Vec<u32> = stream
-        .clone_dtoh(&d_sums)
-        .map_err(|error| error.to_string())?;
+    let sums: Vec<u32> = stream.clone_dtoh(&d_sums).map_err(|error| error.to_string())?;
     let counts: Vec<u32> = stream
         .clone_dtoh(&d_counts)
         .map_err(|error| error.to_string())?;
@@ -106,13 +110,7 @@ pub fn scan_pixels_cuda(
     let cell_means = sums
         .iter()
         .zip(counts.iter())
-        .map(|(&sum, &count)| {
-            if count > 0 {
-                sum as f32 / count as f32
-            } else {
-                0.0
-            }
-        })
+        .map(|(&sum, &count)| if count > 0 { sum as f32 / count as f32 } else { 0.0 })
         .collect();
 
     Ok(PixelScanResult {
@@ -132,16 +130,12 @@ pub fn normalize_cells_cuda(
         return Ok(Vec::new());
     }
 
-    let ctx = CudaContext::new(0).map_err(|error| error.to_string())?;
+    let ctx = cuda_context().ok_or("CUDA-контекст недоступен")?;
     let stream = ctx.default_stream();
 
-    let d_means = stream
-        .clone_htod(means)
-        .map_err(|error| error.to_string())?;
+    let d_means = stream.clone_htod(means).map_err(|error| error.to_string())?;
     let d_lows = stream.clone_htod(lows).map_err(|error| error.to_string())?;
-    let d_highs = stream
-        .clone_htod(highs)
-        .map_err(|error| error.to_string())?;
+    let d_highs = stream.clone_htod(highs).map_err(|error| error.to_string())?;
     let mut d_out = stream
         .alloc_zeros::<f32>(count)
         .map_err(|error| error.to_string())?;

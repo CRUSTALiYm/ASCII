@@ -8,6 +8,7 @@ use opencl3::memory::{Buffer, CL_MEM_READ_ONLY, CL_MEM_READ_WRITE};
 use opencl3::program::Program;
 use opencl3::types::{CL_BLOCKING, CL_NON_BLOCKING};
 use std::ptr;
+use std::sync::OnceLock;
 
 const REGION_HISTOGRAM_SOURCE: &str = include_str!("kernels/region_histogram.cl");
 const CELL_SUMS_SOURCE: &str = include_str!("kernels/cell_sums.cl");
@@ -19,14 +20,30 @@ pub fn is_available() -> bool {
         .unwrap_or(false)
 }
 
-fn first_gpu_context() -> Result<(Context, Device), String> {
-    let device_id = *get_all_devices(CL_DEVICE_TYPE_GPU)
-        .map_err(|error| error.to_string())?
-        .first()
-        .ok_or("Нет OpenCL GPU-устройств")?;
-    let device = Device::new(device_id);
-    let context = Context::from_device(&device).map_err(|error| error.to_string())?;
-    Ok((context, device))
+struct GpuContext {
+    context: Context,
+    queue: CommandQueue,
+}
+
+fn gpu_context() -> Option<&'static GpuContext> {
+    static CONTEXT: OnceLock<Option<GpuContext>> = OnceLock::new();
+    CONTEXT
+        .get_or_init(|| {
+            let device_id = *get_all_devices(CL_DEVICE_TYPE_GPU).ok()?.first()?;
+            let device = Device::new(device_id);
+            let context = Context::from_device(&device).ok()?;
+            let queue = unsafe {
+                CommandQueue::create_with_properties(
+                    &context,
+                    device.id(),
+                    CL_QUEUE_PROFILING_ENABLE,
+                    0,
+                )
+            }
+            .ok()?;
+            Some(GpuContext { context, queue })
+        })
+        .as_ref()
 }
 
 fn build_program(context: &Context, source: &str) -> Result<Program, String> {
@@ -47,15 +64,14 @@ pub fn scan_pixels_opencl(
     }
     let pixel_count = (width * height) as usize;
 
-    let (context, device) = first_gpu_context()?;
-    let queue = unsafe {
-        CommandQueue::create_with_properties(&context, device.id(), CL_QUEUE_PROFILING_ENABLE, 0)
+    let gpu = gpu_context().ok_or("OpenCL GPU-контекст недоступен")?;
+    let context = &gpu.context;
+    let queue = &gpu.queue;
+
+    let mut luma_buf = unsafe {
+        Buffer::<u8>::create(context, CL_MEM_READ_ONLY, pixel_count, ptr::null_mut())
     }
     .map_err(|error| error.to_string())?;
-
-    let mut luma_buf =
-        unsafe { Buffer::<u8>::create(&context, CL_MEM_READ_ONLY, pixel_count, ptr::null_mut()) }
-            .map_err(|error| error.to_string())?;
     unsafe {
         queue
             .enqueue_write_buffer(&mut luma_buf, CL_NON_BLOCKING, 0, luma.as_raw(), &[])
@@ -65,7 +81,7 @@ pub fn scan_pixels_opencl(
     let histogram_len = (tiles_x * tiles_y * 256) as usize;
     let zero_histograms = vec![0u32; histogram_len];
     let mut histograms_buf = unsafe {
-        Buffer::<u32>::create(&context, CL_MEM_READ_WRITE, histogram_len, ptr::null_mut())
+        Buffer::<u32>::create(context, CL_MEM_READ_WRITE, histogram_len, ptr::null_mut())
     }
     .map_err(|error| error.to_string())?;
     unsafe {
@@ -76,12 +92,14 @@ pub fn scan_pixels_opencl(
 
     let cell_count = (columns * rows) as usize;
     let zero_cells = vec![0u32; cell_count];
-    let mut sums_buf =
-        unsafe { Buffer::<u32>::create(&context, CL_MEM_READ_WRITE, cell_count, ptr::null_mut()) }
-            .map_err(|error| error.to_string())?;
-    let mut counts_buf =
-        unsafe { Buffer::<u32>::create(&context, CL_MEM_READ_WRITE, cell_count, ptr::null_mut()) }
-            .map_err(|error| error.to_string())?;
+    let mut sums_buf = unsafe {
+        Buffer::<u32>::create(context, CL_MEM_READ_WRITE, cell_count, ptr::null_mut())
+    }
+    .map_err(|error| error.to_string())?;
+    let mut counts_buf = unsafe {
+        Buffer::<u32>::create(context, CL_MEM_READ_WRITE, cell_count, ptr::null_mut())
+    }
+    .map_err(|error| error.to_string())?;
     unsafe {
         queue
             .enqueue_write_buffer(&mut sums_buf, CL_BLOCKING, 0, &zero_cells, &[])
@@ -91,9 +109,9 @@ pub fn scan_pixels_opencl(
             .map_err(|error| error.to_string())?;
     }
 
-    let histogram_program = build_program(&context, REGION_HISTOGRAM_SOURCE)?;
-    let histogram_kernel = Kernel::create(&histogram_program, "region_histogram")
-        .map_err(|error| error.to_string())?;
+    let histogram_program = build_program(context, REGION_HISTOGRAM_SOURCE)?;
+    let histogram_kernel =
+        Kernel::create(&histogram_program, "region_histogram").map_err(|error| error.to_string())?;
     let histogram_event = unsafe {
         ExecuteKernel::new(&histogram_kernel)
             .set_arg(&luma_buf)
@@ -103,14 +121,13 @@ pub fn scan_pixels_opencl(
             .set_arg(&tiles_y)
             .set_arg(&histograms_buf)
             .set_global_work_size(pixel_count)
-            .enqueue_nd_range(&queue)
+            .enqueue_nd_range(queue)
             .map_err(|error| error.to_string())?
     };
     histogram_event.wait().map_err(|error| error.to_string())?;
 
-    let cell_program = build_program(&context, CELL_SUMS_SOURCE)?;
-    let cell_kernel =
-        Kernel::create(&cell_program, "cell_sums").map_err(|error| error.to_string())?;
+    let cell_program = build_program(context, CELL_SUMS_SOURCE)?;
+    let cell_kernel = Kernel::create(&cell_program, "cell_sums").map_err(|error| error.to_string())?;
     let cell_event = unsafe {
         ExecuteKernel::new(&cell_kernel)
             .set_arg(&luma_buf)
@@ -121,7 +138,7 @@ pub fn scan_pixels_opencl(
             .set_arg(&sums_buf)
             .set_arg(&counts_buf)
             .set_global_work_size(pixel_count)
-            .enqueue_nd_range(&queue)
+            .enqueue_nd_range(queue)
             .map_err(|error| error.to_string())?
     };
     cell_event.wait().map_err(|error| error.to_string())?;
@@ -156,13 +173,7 @@ pub fn scan_pixels_opencl(
     let cell_means = sums
         .iter()
         .zip(counts.iter())
-        .map(|(&sum, &count)| {
-            if count > 0 {
-                sum as f32 / count as f32
-            } else {
-                0.0
-            }
-        })
+        .map(|(&sum, &count)| if count > 0 { sum as f32 / count as f32 } else { 0.0 })
         .collect();
 
     Ok(PixelScanResult {
@@ -182,23 +193,21 @@ pub fn normalize_cells_opencl(
         return Ok(Vec::new());
     }
 
-    let (context, device) = first_gpu_context()?;
-    let queue = unsafe {
-        CommandQueue::create_with_properties(&context, device.id(), CL_QUEUE_PROFILING_ENABLE, 0)
-    }
-    .map_err(|error| error.to_string())?;
+    let gpu = gpu_context().ok_or("OpenCL GPU-контекст недоступен")?;
+    let context = &gpu.context;
+    let queue = &gpu.queue;
 
     let mut means_buf =
-        unsafe { Buffer::<f32>::create(&context, CL_MEM_READ_ONLY, count, ptr::null_mut()) }
+        unsafe { Buffer::<f32>::create(context, CL_MEM_READ_ONLY, count, ptr::null_mut()) }
             .map_err(|error| error.to_string())?;
     let mut lows_buf =
-        unsafe { Buffer::<f32>::create(&context, CL_MEM_READ_ONLY, count, ptr::null_mut()) }
+        unsafe { Buffer::<f32>::create(context, CL_MEM_READ_ONLY, count, ptr::null_mut()) }
             .map_err(|error| error.to_string())?;
     let mut highs_buf =
-        unsafe { Buffer::<f32>::create(&context, CL_MEM_READ_ONLY, count, ptr::null_mut()) }
+        unsafe { Buffer::<f32>::create(context, CL_MEM_READ_ONLY, count, ptr::null_mut()) }
             .map_err(|error| error.to_string())?;
     let out_buf =
-        unsafe { Buffer::<f32>::create(&context, CL_MEM_READ_WRITE, count, ptr::null_mut()) }
+        unsafe { Buffer::<f32>::create(context, CL_MEM_READ_WRITE, count, ptr::null_mut()) }
             .map_err(|error| error.to_string())?;
 
     unsafe {
@@ -213,7 +222,7 @@ pub fn normalize_cells_opencl(
             .map_err(|error| error.to_string())?;
     }
 
-    let program = build_program(&context, NORMALIZE_SOURCE)?;
+    let program = build_program(context, NORMALIZE_SOURCE)?;
     let kernel = Kernel::create(&program, "normalize_cells").map_err(|error| error.to_string())?;
 
     let count_u32 = count as u32;
@@ -237,7 +246,7 @@ pub fn normalize_cells_opencl(
             .set_arg(&params.contrast)
             .set_arg(&invert_flag)
             .set_global_work_size(count)
-            .enqueue_nd_range(&queue)
+            .enqueue_nd_range(queue)
             .map_err(|error| error.to_string())?
     };
     event.wait().map_err(|error| error.to_string())?;
