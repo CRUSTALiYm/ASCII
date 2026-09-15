@@ -1,0 +1,182 @@
+<div class="advanced-settings">
+  <section class="advanced-settings__section">
+    <h4>Целевые правки</h4>
+
+    <div class="advanced-settings__field">
+      <app-numeric-scrubber
+        label="Яркость"
+        [value]="settings.params().brightness"
+        [min]="-100"
+        [max]="100"
+        (valueChange)="setNumber('brightness', $event)"
+      />
+    </div>
+
+    <div class="advanced-settings__field">
+      <app-numeric-scrubber
+        label="Контраст"
+        [value]="settings.params().contrast"
+        [min]="-100"
+        [max]="100"
+        (valueChange)="setNumber('contrast', $event)"
+      />
+    </div>
+
+    <div class="advanced-settings__toggle">
+      <span>Инверсия</span>
+      <p-togglebutton
+        [ngModel]="settings.params().invert"
+        (ngModelChange)="setBoolean('invert', $event)"
+        onLabel="Вкл"
+        offLabel="Выкл"
+      />
+    </div>
+  </section>
+
+  <section class="advanced-settings__section">
+    <h4>Исходные правки</h4>
+
+    <div class="advanced-settings__field">
+      <app-numeric-scrubber
+        label="Яркость источника"
+        [value]="settings.params().sourceBrightness"
+        [min]="-100"
+        [max]="100"
+        (valueChange)="setNumber('sourceBrightness', $event)"
+      />
+    </div>
+
+    <div class="advanced-settings__field">
+      <app-numeric-scrubber
+        label="Контраст источника"
+        [value]="settings.params().sourceContrast"
+        [min]="-100"
+        [max]="100"
+        (valueChange)="setNumber('sourceContrast', $event)"
+      />
+    </div>
+
+    <div class="advanced-settings__toggle">
+      <span>Чёрно-белый порог</span>
+      <p-togglebutton
+        [ngModel]="settings.params().sourceBlackWhite"
+        (ngModelChange)="setBoolean('sourceBlackWhite', $event)"
+        onLabel="Вкл"
+        offLabel="Выкл"
+      />
+    </div>
+
+    @if (settings.params().sourceBlackWhite) {
+      <div class="advanced-settings__field">
+        <app-numeric-scrubber
+          label="Порог"
+          [value]="settings.params().sourceThreshold"
+          [min]="0"
+          [max]="100"
+          (valueChange)="setNumber('sourceThreshold', $event)"
+        />
+      </div>
+    }
+  </section>
+
+  <section class="advanced-settings__section">
+    <h4>Адаптивный анализ яркости</h4>
+
+    <div class="advanced-settings__field">
+      <app-numeric-scrubber
+        label="Размер региональной сетки"
+        [value]="settings.params().adaptiveRegionTiles"
+        [min]="2"
+        [max]="32"
+        [step]="1"
+        (valueChange)="setNumber('adaptiveRegionTiles', $event)"
+      />
+    </div>
+
+    <div class="advanced-settings__field">
+      <app-numeric-scrubber
+        label="Обрезка перцентиля, %"
+        [value]="settings.params().adaptivePercentile"
+        [min]="0.5"
+        [max]="45"
+        [step]="0.5"
+        (valueChange)="setNumber('adaptivePercentile', $event)"
+      />
+    </div>
+
+    <div class="advanced-settings__field">
+      <app-numeric-scrubber
+        label="Сглаживание по соседям"
+        [value]="settings.params().adaptiveSmoothing"
+        [min]="0"
+        [max]="1"
+        [step]="0.05"
+        [sensitivity]="8"
+        (valueChange)="setNumber('adaptiveSmoothing', $event)"
+      />
+    </div>
+
+    <div class="advanced-settings__field">
+      <app-numeric-scrubber
+        label="Минимальный диапазон"
+        [value]="settings.params().adaptiveMinRange"
+        [min]="0"
+        [max]="255"
+        (valueChange)="setNumber('adaptiveMinRange', $event)"
+      />
+    </div>
+
+    <div class="advanced-settings__field">
+      <app-numeric-scrubber
+        label="Порог подавления выбросов"
+        [value]="settings.params().adaptiveDespikeThreshold"
+        [min]="0"
+        [max]="1"
+        [step]="0.02"
+        [sensitivity]="8"
+        (valueChange)="setNumber('adaptiveDespikeThreshold', $event)"
+      />
+    </div>
+  </section>
+
+  <section class="advanced-settings__section">
+    <h4>Вычислительный бэкенд</h4>
+
+    <p-select
+      [options]="computeBackendOptions"
+      optionLabel="label"
+      optionValue="value"
+      [ngModel]="settings.params().computeBackend"
+      (ngModelChange)="onComputeBackendChange($event)"
+    >
+      <ng-template #item let-option>
+        <div class="advanced-settings__backend-option">
+          <span>{{ option.label }}</span>
+          @if (option.value !== "auto") {
+            @if (backendExecutesOnGpu(option.value)) {
+              <p-tag severity="success" value="GPU" />
+            } @else if (isBackendReady(option.value)) {
+              <p-tag severity="info" value="только детект" />
+            } @else {
+              <p-tag severity="secondary" value="недоступен" />
+            }
+          }
+        </div>
+      </ng-template>
+    </p-select>
+  </section>
+
+  <section class="advanced-settings__section">
+    <h4>Рендер-бэкенды (обнаружено)</h4>
+    <div class="advanced-settings__backend-list">
+      @for (backend of backends.renderBackends(); track backend.id) {
+        <p-tag
+          [severity]="backend.kind === 'gpu' ? 'success' : 'secondary'"
+          [value]="backend.label"
+        />
+      } @empty {
+        <span class="advanced-settings__backend-empty">Определяются…</span>
+      }
+    </div>
+  </section>
+</div>

@@ -1,0 +1,15 @@
+@use "../design-tokens" as tokens;
+
+.progress-indicator {
+  padding: 0 2px;
+
+  ::ng-deep .p-progressbar {
+    height: 3px;
+    background: tokens.$color-bg-input;
+    border-radius: 999px;
+  }
+
+  ::ng-deep .p-progressbar-value {
+    background: tokens.$color-accent;
+  }
+}

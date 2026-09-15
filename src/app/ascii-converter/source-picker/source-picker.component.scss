@@ -1,0 +1,70 @@
+@use "../design-tokens" as tokens;
+
+:host {
+  display: block;
+}
+
+.source-picker {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 0;
+
+  &__switcher {
+    display: flex;
+    gap: 3px;
+    padding: 3px;
+    background: tokens.$color-bg-input;
+    border-radius: tokens.$radius-md;
+  }
+
+  &__switch-button {
+    display: flex;
+    flex: 1;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 7px 6px;
+    color: tokens.$color-text-secondary;
+    background: transparent;
+    border: 0;
+    border-radius: 6px;
+    cursor: pointer;
+    font-family: tokens.$font-ui;
+    font-size: 0.6rem;
+
+    i {
+      font-size: 0.65rem;
+    }
+
+    &:hover {
+      color: tokens.$color-text-primary;
+    }
+
+    &--active {
+      color: tokens.$color-accent-text-on;
+      background: tokens.$color-accent;
+      font-weight: 700;
+    }
+
+    &--active:hover {
+      color: tokens.$color-accent-text-on;
+    }
+  }
+
+  &__stream-controls {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    min-width: 0;
+
+    p-select {
+      min-width: 0;
+    }
+  }
+}
+
+::ng-deep .source-picker__stream-controls p-select.p-select,
+::ng-deep .source-picker__stream-controls p-select .p-select {
+  width: 100%;
+}

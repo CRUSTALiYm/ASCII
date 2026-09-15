@@ -1,0 +1,66 @@
+<div class="source-picker">
+  <div class="source-picker__switcher">
+    @for (option of sourceOptions; track option.value) {
+      <button
+        type="button"
+        class="source-picker__switch-button"
+        [class.source-picker__switch-button--active]="sourceKind === option.value"
+        (click)="onSourceKindChange(option.value)"
+      >
+        <i [class]="option.icon"></i>
+        <span>{{ option.label }}</span>
+      </button>
+    }
+  </div>
+
+  @switch (sourceKind) {
+    @case ("file") {
+      <p-button
+        label="Открыть файл"
+        icon="pi pi-folder-open"
+        styleClass="w-full"
+        (click)="pickFile.emit()"
+      />
+    }
+
+    @case ("camera") {
+      <div class="source-picker__stream-controls">
+        <p-select
+          [options]="camera.devices()"
+          optionLabel="name"
+          optionValue="index"
+          placeholder="Выберите камеру"
+          [ngModel]="camera.selectedIndex()"
+          (ngModelChange)="onCameraDeviceChange($event)"
+        />
+        <p-button
+          styleClass="w-full"
+          [label]="camera.isStreaming() ? 'Остановить' : 'Включить'"
+          [icon]="camera.isStreaming() ? 'pi pi-stop' : 'pi pi-play'"
+          [disabled]="camera.selectedIndex() === null"
+          (click)="camera.isStreaming() ? camera.stop() : startCamera.emit()"
+        />
+      </div>
+    }
+
+    @case ("screen") {
+      <div class="source-picker__stream-controls">
+        <p-select
+          [options]="screen.sources()"
+          optionLabel="label"
+          optionValue="id"
+          placeholder="Выберите источник"
+          [ngModel]="screen.selectedId()"
+          (ngModelChange)="onScreenSourceChange($event)"
+        />
+        <p-button
+          styleClass="w-full"
+          [label]="screen.isStreaming() ? 'Остановить' : 'Включить'"
+          [icon]="screen.isStreaming() ? 'pi pi-stop' : 'pi pi-play'"
+          [disabled]="screen.selectedId() === null"
+          (click)="screen.isStreaming() ? screen.stop() : startScreen.emit()"
+        />
+      </div>
+    }
+  }
+</div>
