@@ -1,7 +1,7 @@
 {
   "name": "t-ascii",
   "description": "Простой и удобный Десктопный конвертер изображений в ASCII",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "productName": "Конвертер ASCII",
   "type": "module",
   "scripts": {

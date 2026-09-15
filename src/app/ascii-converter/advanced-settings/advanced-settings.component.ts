@@ -1,4 +1,4 @@
-import { Component, inject } from "@angular/core";
+import { Component, ViewEncapsulation, inject } from "@angular/core";
 import { FormsModule } from "@angular/forms";
 import { SelectModule } from "primeng/select";
 import { TagModule } from "primeng/tag";
@@ -47,6 +47,7 @@ interface ComputeBackendOption {
   ],
   templateUrl: "./advanced-settings.component.html",
   styleUrl: "./advanced-settings.component.scss",
+  encapsulation: ViewEncapsulation.None,
 })
 export class AdvancedSettingsComponent {
   readonly settings = inject(SettingsService);

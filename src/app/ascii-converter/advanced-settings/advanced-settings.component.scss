@@ -77,11 +77,28 @@
     color: tokens.$color-text-faint;
     font-size: 0.6rem;
   }
+}
 
-  ::ng-deep p-select.p-select,
-  ::ng-deep p-select .p-select {
-    display: block;
-    width: 100%;
-    min-width: 0;
-  }
+p-select {
+  display: block;
+  width: 100%;
+  min-width: 0;
+}
+
+.p-select {
+  width: 100% !important;
+}
+
+.p-select-overlay {
+  max-width: min(320px, 90vw) !important;
+  box-sizing: border-box;
+}
+
+.p-select-list-container {
+  max-height: 260px;
+  overflow-y: auto;
+}
+
+.p-select-option {
+  white-space: normal !important;
 }
